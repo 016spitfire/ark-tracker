@@ -1,0 +1,299 @@
+:root {
+  --bg: #15181c;
+  --surface: #1f242a;
+  --surface-2: #2a3038;
+  --border: #363d47;
+  --text: #e6e8eb;
+  --text-dim: #9aa3ae;
+  --accent: #e8a33d;
+  --ready: #5bb56a;
+  --danger: #e05252;
+
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1, h2 {
+  margin: 0;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Controls */
+
+button,
+label.button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button,
+label.button {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #15181c;
+  font-weight: 600;
+}
+
+button.danger {
+  color: var(--danger);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+input,
+select,
+textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  width: 100%;
+  min-width: 0;
+}
+
+input[type='checkbox'] {
+  width: auto;
+}
+
+input[type='color'] {
+  width: 2.5rem;
+  height: 2.4rem;
+  padding: 0.2rem;
+  flex-shrink: 0;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+/* Layout */
+
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 0;
+  background: var(--bg);
+}
+
+header h1 {
+  font-size: 1.3rem;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+header nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+section {
+  margin-top: 1.25rem;
+}
+
+section h2 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  margin-bottom: 0.5rem;
+}
+
+.row,
+.actions,
+.add-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.row > * {
+  flex: 1;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin: 0 0 0.5rem;
+}
+
+.error {
+  color: var(--danger);
+  margin: 0;
+}
+
+.empty {
+  color: var(--text-dim);
+  text-align: center;
+  margin-top: 3rem;
+}
+
+/* Marker list */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filters select {
+  flex: 1 1 10rem;
+}
+
+.marker-list ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.marker-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  border-radius: 8px;
+  padding: 0.7rem;
+}
+
+.marker-card.ready .timer {
+  color: var(--ready);
+  font-weight: 700;
+}
+
+.marker-card.done {
+  opacity: 0.5;
+}
+
+.card-main {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.card-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.card-title .name {
+  font-weight: 600;
+}
+
+.card-title .timer {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.coords {
+  font-variant-numeric: tabular-nums;
+}
+
+.description {
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+}
+
+.done-toggle {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.6rem;
+}
+
+/* Form */
+
+.marker-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem 0.8rem;
+  margin: 0;
+}
+
+legend {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  padding: 0 0.3rem;
+}
+
+/* Settings */
+
+.edit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.edit-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
