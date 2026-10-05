@@ -54,6 +54,7 @@ Any other URL redirects to `/`.
 - **Done** marks a marker as handled (looted, claimed, checked) without deleting it. Use "Show done" to see those markers again.
 - Categories control whether a marker has a timer. You can add, recolor, or toggle them in Settings.
 - Maps and categories that are still used by markers can't be deleted.
+- **Duplicate check**: when adding a marker, the form lists existing markers (including done ones) on the same map within the distance set in **Settings > Duplicate Check** (default 1.0). **Open it** jumps to that marker so you can resync it or add timers; **Save anyway** creates the new one. Settings are part of the saved data, so they're included in exports. New settings get their default values on load without a version bump.
 
 ## Sharing between devices
 

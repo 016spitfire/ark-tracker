@@ -8,6 +8,10 @@ type Props = {
   maps: ArkMap[]
   categories: Category[]
   marker?: Marker
+  // Every marker, for the duplicate check on new markers
+  markers: Marker[]
+  duplicateRadius: number
+  onOpenMarker: (id: string) => void
   defaultMapId?: string
   onSave: (marker: Marker) => void
   onDelete?: (id: string) => void
@@ -49,6 +53,9 @@ export default function MarkerForm({
   maps,
   categories,
   marker,
+  markers,
+  duplicateRadius,
+  onOpenMarker,
   defaultMapId,
   onSave,
   onDelete,
@@ -69,6 +76,18 @@ export default function MarkerForm({
   const category = categories.find(c => c.id === categoryId)
   const hasTimer = category?.hasTimer ?? false
 
+  // New markers only: existing markers on the same map near the entered coordinates
+  const latNum = parseCoord(lat)
+  const lonNum = parseCoord(lon)
+  const nearby =
+    marker || latNum === null || lonNum === null
+      ? []
+      : markers
+          .filter(m => m.mapId === mapId)
+          .map(m => ({ marker: m, distance: Math.hypot(m.lat - latNum, m.lon - lonNum) }))
+          .filter(n => n.distance <= duplicateRadius)
+          .sort((a, b) => a.distance - b.distance)
+
   const updateDraft = (id: string, changes: Partial<TimerDraft>) =>
     setDrafts(ds => ds.map(d => (d.id === id ? { ...d, ...changes } : d)))
 
@@ -78,8 +97,6 @@ export default function MarkerForm({
     if (!name.trim()) return setError('Give it a name.')
     if (!mapId || !categoryId) return setError('Pick a map and a category.')
 
-    const latNum = parseCoord(lat)
-    const lonNum = parseCoord(lon)
     if (latNum === null || lonNum === null) {
       return setError('Lat and lon must be numbers from 0 to 100.')
     }
@@ -157,6 +174,27 @@ export default function MarkerForm({
           <input inputMode="decimal" value={lon} onChange={e => setLon(e.target.value)} placeholder="0-100" />
         </label>
       </div>
+
+      {nearby.length > 0 && (
+        <div className="duplicate-warning">
+          <p>Already tracked nearby. Open one to resync it or add timers, or save anyway.</p>
+          <ul>
+            {nearby.map(({ marker: m, distance }) => (
+              <li key={m.id}>
+                <span>
+                  <strong>{m.name}</strong>
+                  {m.status === 'done' && ' (done)'}{' '}
+                  <span className="hint">
+                    {m.lat}, {m.lon} · {distance.toFixed(1)} away
+                    {m.timers.length > 0 && ` · ${m.timers.length} timer${m.timers.length === 1 ? '' : 's'}`}
+                  </span>
+                </span>
+                <button type="button" onClick={() => onOpenMarker(m.id)}>Open it</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {hasTimer && (
         <fieldset>
@@ -236,7 +274,7 @@ export default function MarkerForm({
       {error && <p className="error">{error}</p>}
 
       <div className="actions">
-        <button type="submit" className="primary">Save</button>
+        <button type="submit" className="primary">{nearby.length > 0 ? 'Save anyway' : 'Save'}</button>
         <button type="button" onClick={onCancel}>Cancel</button>
         {marker && onDelete && (
           <button

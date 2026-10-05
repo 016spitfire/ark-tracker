@@ -389,6 +389,41 @@ fieldset {
   margin: 0;
 }
 
+.duplicate-warning {
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+.duplicate-warning p {
+  margin: 0 0 0.5rem;
+  color: var(--accent);
+}
+
+.duplicate-warning ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.duplicate-warning li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.duplicate-warning li button {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+}
+
+.radius-input {
+  max-width: 8rem;
+}
+
 .timer-drafts {
   display: flex;
   flex-direction: column;

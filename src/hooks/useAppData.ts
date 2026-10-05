@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { DEFAULT_DATA } from '../data/defaults'
-import type { AppData, ArkMap, Category, Marker, MarkerStatus, Timer } from '../types'
+import { DEFAULT_DATA, DEFAULT_SETTINGS } from '../data/defaults'
+import type { AppData, AppSettings, ArkMap, Category, Marker, MarkerStatus, Timer } from '../types'
 
 const STORAGE_KEY = 'ark-tracker:data'
 
@@ -32,7 +32,10 @@ export function migrate(value: unknown): AppData | null {
     version = 2
   }
 
-  return { ...(data as AppData), version: 2, markers: markers as Marker[] }
+  // New settings get their defaults without a version bump, since nothing old changes shape
+  const settings = { ...DEFAULT_SETTINGS, ...(data.settings as Partial<AppSettings> | undefined) }
+
+  return { ...(data as AppData), version: 2, markers: markers as Marker[], settings }
 }
 
 function load(): AppData {
@@ -94,6 +97,9 @@ export function useAppData() {
       setData(d => ({ ...d, categories: upsert(d.categories, category) })),
     deleteCategory: (id: string) =>
       setData(d => ({ ...d, categories: d.categories.filter(c => c.id !== id) })),
+
+    saveSettings: (changes: Partial<AppSettings>) =>
+      setData(d => ({ ...d, settings: { ...d.settings, ...changes } })),
 
     replaceAll: (next: AppData) => setData(next),
   }

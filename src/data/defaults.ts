@@ -1,4 +1,8 @@
-import type { AppData } from '../types'
+import type { AppData, AppSettings } from '../types'
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  duplicateRadius: 1,
+}
 
 // Starting data for a fresh install. Everything here is editable in Settings.
 export const DEFAULT_DATA: AppData = {
@@ -27,4 +31,5 @@ export const DEFAULT_DATA: AppData = {
     { id: 'other', name: 'Other', color: '#c9c9c9', hasTimer: false },
   ],
   markers: [],
+  settings: DEFAULT_SETTINGS,
 }

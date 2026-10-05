@@ -35,6 +35,11 @@ export type Marker = {
   status: MarkerStatus
 }
 
+export type AppSettings = {
+  // How close (in map coordinate units) an existing marker must be to count as a possible duplicate
+  duplicateRadius: number
+}
+
 // Everything the app saves, stored as one object in localStorage.
 // `version` lets us migrate old saves if the shape changes later.
 export type AppData = {
@@ -42,4 +47,5 @@ export type AppData = {
   maps: ArkMap[]
   categories: Category[]
   markers: Marker[]
+  settings: AppSettings
 }

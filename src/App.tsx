@@ -85,6 +85,8 @@ export default function App() {
                     goBack()
                   }}
                   onCancel={goBack}
+                  // Replace, so Back from the existing marker returns to the list, not the new form
+                  onOpenMarker={id => navigate(`/markers/${id}/edit`, { replace: true })}
                 />
               }
             />
@@ -98,6 +100,7 @@ export default function App() {
                 onDeleteMap={store.deleteMap}
                 onSaveCategory={store.saveCategory}
                 onDeleteCategory={store.deleteCategory}
+                onSaveSettings={store.saveSettings}
                 onReplaceAll={store.replaceAll}
               />
             }
@@ -116,6 +119,7 @@ type MarkerFormPageProps = {
   onSave: (marker: Marker) => void
   onDelete: (id: string) => void
   onCancel: () => void
+  onOpenMarker: (id: string) => void
 }
 
 // Reads the marker id from the URL. No id means a new marker.
@@ -133,6 +137,8 @@ function MarkerFormPage({ data, ...props }: MarkerFormPageProps) {
       maps={data.maps}
       categories={data.categories}
       marker={marker}
+      markers={data.markers}
+      duplicateRadius={data.settings.duplicateRadius}
       {...props}
     />
   )

@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
 import { migrate } from '../hooks/useAppData'
-import type { AppData, ArkMap, Category } from '../types'
+import type { AppData, AppSettings, ArkMap, Category } from '../types'
 
 type Props = {
   data: AppData
@@ -8,6 +8,7 @@ type Props = {
   onDeleteMap: (id: string) => void
   onSaveCategory: (category: Category) => void
   onDeleteCategory: (id: string) => void
+  onSaveSettings: (changes: Partial<AppSettings>) => void
   onReplaceAll: (data: AppData) => void
 }
 
@@ -17,9 +18,12 @@ export default function Settings({
   onDeleteMap,
   onSaveCategory,
   onDeleteCategory,
+  onSaveSettings,
   onReplaceAll,
 }: Props) {
   const [newMapName, setNewMapName] = useState('')
+  // Kept as text while typing so "0." doesn't snap back to "0"
+  const [radius, setRadius] = useState(String(data.settings.duplicateRadius))
   const [newCategoryName, setNewCategoryName] = useState('')
 
   const markerCount = (key: 'mapId' | 'categoryId', id: string) =>
@@ -147,6 +151,28 @@ export default function Settings({
           />
           <button onClick={addCategory}>Add</button>
         </div>
+      </section>
+
+      <section>
+        <h2>Duplicate Check</h2>
+        <p className="hint">
+          When adding a marker, warn about existing markers on the same map within this distance.
+          Map coordinates run 0-100. Set to 0 to only match identical coordinates.
+        </p>
+        <label className="radius-input">
+          Distance
+          <input
+            inputMode="decimal"
+            value={radius}
+            onChange={e => {
+              setRadius(e.target.value)
+              const n = Number(e.target.value)
+              if (e.target.value.trim() !== '' && Number.isFinite(n) && n >= 0) {
+                onSaveSettings({ duplicateRadius: n })
+              }
+            }}
+          />
+        </label>
       </section>
 
       <section>
