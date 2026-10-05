@@ -19,6 +19,7 @@ npm run build     # type-check + production build
 
 | Path | Purpose |
 |---|---|
+| `src/App.tsx` | Header and routes; holds the data store and list filters |
 | `src/types.ts` | Data model: `ArkMap`, `Category`, `Marker`, `AppData` |
 | `src/data/defaults.ts` | Starting maps and categories for a fresh install |
 | `src/hooks/useAppData.ts` | Loads/saves `AppData` in localStorage, exposes save/delete actions |
@@ -27,6 +28,20 @@ npm run build     # type-check + production build
 | `src/components/MarkerList.tsx` | Main screen: filters, Timers section, Points of Interest section |
 | `src/components/MarkerForm.tsx` | Add/edit a marker |
 | `src/components/Settings.tsx` | Edit maps and categories, export/import JSON |
+| `src/components/ResyncForm.tsx` | Inline "time the game shows now" entry on timer cards |
+| `src/components/TimerDisclaimer.tsx` | Note about server downtime and rollbacks |
+| `vercel.json` | Sends every URL to `index.html` so routes work on refresh and direct links |
+
+## Routes
+
+| URL | Page |
+|---|---|
+| `/` | Marker list |
+| `/markers/new` | Add a marker |
+| `/markers/:id/edit` | Edit a marker (redirects to `/` if it doesn't exist) |
+| `/settings` | Settings |
+
+Any other URL redirects to `/`.
 
 ## How the data works
 

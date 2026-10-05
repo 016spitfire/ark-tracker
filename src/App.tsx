@@ -1,22 +1,20 @@
 import { useState } from 'react'
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
 import MarkerForm from './components/MarkerForm'
 import MarkerList, { type Filters } from './components/MarkerList'
 import Settings from './components/Settings'
 import { useAppData } from './hooks/useAppData'
 import { useNow } from './hooks/useNow'
-
-type View =
-  | { name: 'list' }
-  | { name: 'form'; markerId?: string }
-  | { name: 'settings' }
+import type { AppData, Marker } from './types'
 
 export default function App() {
   const store = useAppData()
   const { data } = store
   const now = useNow()
+  const navigate = useNavigate()
+  const location = useLocation()
 
-  const [view, setView] = useState<View>({ name: 'list' })
-  // Lives here (not in MarkerList) so filters survive switching views
+  // Lives here (not in MarkerList) so filters survive switching pages
   const [filters, setFilters] = useState<Filters>({
     mapId: 'all',
     hiddenCategoryIds: [],
@@ -24,71 +22,113 @@ export default function App() {
     showDone: false,
   })
 
-  const toList = () => setView({ name: 'list' })
+  // Step back in history so the phone's back button and the app agree, and the list keeps
+  // its scroll position. If this page was opened directly (no history yet), go to the list.
+  const goBack = () => (location.key === 'default' ? navigate('/', { replace: true }) : navigate(-1))
+
+  const isList = location.pathname === '/'
 
   return (
     <div className="app">
       <header>
-        <h1 onClick={toList}>ARK Tracker</h1>
-        {view.name === 'list' ? (
+        <h1 onClick={() => navigate('/')}>ARK Tracker</h1>
+        {isList ? (
           <nav>
-            <button className="primary" onClick={() => setView({ name: 'form' })}>+ Add</button>
-            <button onClick={() => setView({ name: 'settings' })}>Settings</button>
+            <button className="primary" onClick={() => navigate('/markers/new')}>+ Add</button>
+            <button onClick={() => navigate('/settings')}>Settings</button>
           </nav>
         ) : (
           <nav>
-            <button onClick={toList}>Back</button>
+            <button onClick={goBack}>Back</button>
           </nav>
         )}
       </header>
 
       <main>
-        {view.name === 'list' && (
-          <MarkerList
-            markers={data.markers}
-            maps={data.maps}
-            categories={data.categories}
-            filters={filters}
-            onFiltersChange={setFilters}
-            now={now}
-            onEdit={id => setView({ name: 'form', markerId: id })}
-            onToggleDone={m => store.setMarkerStatus(m.id, m.status === 'done' ? 'active' : 'done')}
-            onResync={(id, durationMs) => store.setMarkerExpiresAt(id, Date.now() + durationMs)}
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <MarkerList
+                markers={data.markers}
+                maps={data.maps}
+                categories={data.categories}
+                filters={filters}
+                onFiltersChange={setFilters}
+                now={now}
+                onEdit={id => navigate(`/markers/${id}/edit`)}
+                onToggleDone={m => store.setMarkerStatus(m.id, m.status === 'done' ? 'active' : 'done')}
+                onResync={(id, durationMs) => store.setMarkerExpiresAt(id, Date.now() + durationMs)}
+              />
+            }
           />
-        )}
-
-        {view.name === 'form' && (
-          <MarkerForm
-            // key resets the form's state when switching between markers
-            key={view.markerId ?? 'new'}
-            maps={data.maps}
-            categories={data.categories}
-            marker={data.markers.find(m => m.id === view.markerId)}
-            // New markers default to the map you're filtered to, for quick entry mid-session
-            defaultMapId={filters.mapId !== 'all' ? filters.mapId : undefined}
-            onSave={marker => {
-              store.saveMarker(marker)
-              toList()
-            }}
-            onDelete={id => {
-              store.deleteMarker(id)
-              toList()
-            }}
-            onCancel={toList}
+          {['/markers/new', '/markers/:id/edit'].map(path => (
+            <Route
+              key={path}
+              path={path}
+              element={
+                <MarkerFormPage
+                  data={data}
+                  // New markers default to the map you're filtered to, for quick entry mid-session
+                  defaultMapId={filters.mapId !== 'all' ? filters.mapId : undefined}
+                  onSave={marker => {
+                    store.saveMarker(marker)
+                    goBack()
+                  }}
+                  onDelete={id => {
+                    store.deleteMarker(id)
+                    goBack()
+                  }}
+                  onCancel={goBack}
+                />
+              }
+            />
+          ))}
+          <Route
+            path="/settings"
+            element={
+              <Settings
+                data={data}
+                onSaveMap={store.saveMap}
+                onDeleteMap={store.deleteMap}
+                onSaveCategory={store.saveCategory}
+                onDeleteCategory={store.deleteCategory}
+                onReplaceAll={store.replaceAll}
+              />
+            }
           />
-        )}
-
-        {view.name === 'settings' && (
-          <Settings
-            data={data}
-            onSaveMap={store.saveMap}
-            onDeleteMap={store.deleteMap}
-            onSaveCategory={store.saveCategory}
-            onDeleteCategory={store.deleteCategory}
-            onReplaceAll={store.replaceAll}
-          />
-        )}
+          {/* Unknown URLs land on the list instead of a blank page */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
     </div>
+  )
+}
+
+type MarkerFormPageProps = {
+  data: AppData
+  defaultMapId?: string
+  onSave: (marker: Marker) => void
+  onDelete: (id: string) => void
+  onCancel: () => void
+}
+
+// Reads the marker id from the URL. No id means a new marker.
+function MarkerFormPage({ data, ...props }: MarkerFormPageProps) {
+  const { id } = useParams()
+  const marker = id ? data.markers.find(m => m.id === id) : undefined
+
+  // An edit link for a marker that no longer exists (deleted, or a different device)
+  if (id && !marker) return <Navigate to="/" replace />
+
+  return (
+    <MarkerForm
+      // key resets the form's state when switching between markers
+      key={id ?? 'new'}
+      maps={data.maps}
+      categories={data.categories}
+      marker={marker}
+      {...props}
+    />
   )
 }
