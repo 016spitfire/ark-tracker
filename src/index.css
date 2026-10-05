@@ -255,21 +255,30 @@ section h2 {
   opacity: 0.5;
 }
 
+.card-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
 .card-main {
+  flex: 1;
+  min-width: 0;
   cursor: pointer;
 }
 
-.card-title {
+.card-side {
   display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  flex-shrink: 0;
 }
 
-.card-title .name {
+.card-main .name {
   font-weight: 600;
 }
 
-.card-title .timer {
+.card-side .timer {
   font-variant-numeric: tabular-nums;
   color: var(--accent);
   white-space: nowrap;
@@ -295,8 +304,9 @@ section h2 {
 
 .card-actions {
   display: flex;
-  justify-content: flex-end;
   gap: 0.4rem;
+  /* Pushes the buttons to the bottom, even on cards with no timer above them */
+  margin-top: auto;
 }
 
 .card-actions button {
