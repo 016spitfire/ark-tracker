@@ -17,7 +17,12 @@ export default function App() {
 
   const [view, setView] = useState<View>({ name: 'list' })
   // Lives here (not in MarkerList) so filters survive switching views
-  const [filters, setFilters] = useState<Filters>({ mapId: 'all', categoryId: 'all', showDone: false })
+  const [filters, setFilters] = useState<Filters>({
+    mapId: 'all',
+    hiddenCategoryIds: [],
+    search: '',
+    showDone: false,
+  })
 
   const toList = () => setView({ name: 'list' })
 

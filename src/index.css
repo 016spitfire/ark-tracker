@@ -201,6 +201,34 @@ section h2 {
   flex: 1 1 10rem;
 }
 
+.filters .search {
+  flex: 1 1 100%;
+}
+
+.category-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.category-chip {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.category-filters button {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+}
+
 .marker-list ul {
   display: flex;
   flex-direction: column;
