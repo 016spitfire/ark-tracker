@@ -66,34 +66,33 @@ export default function MarkerList({
         className={`marker-card${marker.status === 'done' ? ' done' : ''}${ready ? ' ready' : ''}`}
         style={{ borderLeftColor: category?.color }}
       >
-        <div className="card-row">
-          <div className="card-main" onClick={() => onEdit(marker.id)}>
-            <div className="card-title">
-              <span className="name">{marker.name}</span>
-              {isTimed(marker) && remaining !== null && (
-                <span className="timer">{ready ? 'READY' : formatRemaining(remaining)}</span>
-              )}
-            </div>
+        <div className="card-main" onClick={() => onEdit(marker.id)}>
+          <div className="card-title">
+            <span className="name">{marker.name}</span>
+            {isTimed(marker) && remaining !== null && (
+              <span className="timer">{ready ? 'READY' : formatRemaining(remaining)}</span>
+            )}
+          </div>
+          <div className="card-meta">
+            <span style={{ color: category?.color }}>{category?.name ?? 'Unknown category'}</span>
+            {filters.mapId === 'all' && <span>{map?.name ?? 'Unknown map'}</span>}
+            <span className="coords">{marker.lat}, {marker.lon}</span>
+          </div>
+          {isTimed(marker) && marker.expiresAt !== undefined && (
             <div className="card-meta">
-              <span style={{ color: category?.color }}>{category?.name ?? 'Unknown category'}</span>
-              {filters.mapId === 'all' && <span>{map?.name ?? 'Unknown map'}</span>}
-              <span className="coords">{marker.lat}, {marker.lon}</span>
+              {ready ? 'Ready since' : 'Ready at'} {formatDateTime(marker.expiresAt)}
             </div>
-            {isTimed(marker) && marker.expiresAt !== undefined && (
-              <div className="card-meta">
-                {ready ? 'Ready since' : 'Ready at'} {formatDateTime(marker.expiresAt)}
-              </div>
-            )}
-            {marker.description && <p className="description">{marker.description}</p>}
-          </div>
-          <div className="card-actions">
-            <button onClick={() => onToggleDone(marker)}>
-              {marker.status === 'done' ? 'Reopen' : 'Done'}
-            </button>
-            {canResync && resyncingId !== marker.id && (
-              <button onClick={() => setResyncingId(marker.id)}>Resync</button>
-            )}
-          </div>
+          )}
+          {marker.description && <p className="description">{marker.description}</p>}
+        </div>
+        {/* Done stays rightmost so it's in the same spot on every card */}
+        <div className="card-actions">
+          {canResync && resyncingId !== marker.id && (
+            <button onClick={() => setResyncingId(marker.id)}>Resync</button>
+          )}
+          <button onClick={() => onToggleDone(marker)}>
+            {marker.status === 'done' ? 'Reopen' : 'Done'}
+          </button>
         </div>
         {canResync && resyncingId === marker.id && (
           <ResyncForm

@@ -227,15 +227,7 @@ section h2 {
   opacity: 0.5;
 }
 
-.card-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
 .card-main {
-  flex: 1;
-  min-width: 0;
   cursor: pointer;
 }
 
@@ -275,9 +267,8 @@ section h2 {
 
 .card-actions {
   display: flex;
-  flex-direction: column;
+  justify-content: flex-end;
   gap: 0.4rem;
-  flex-shrink: 0;
 }
 
 .card-actions button {
