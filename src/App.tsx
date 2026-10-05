@@ -48,6 +48,7 @@ export default function App() {
             now={now}
             onEdit={id => setView({ name: 'form', markerId: id })}
             onToggleDone={m => store.setMarkerStatus(m.id, m.status === 'done' ? 'active' : 'done')}
+            onResync={(id, durationMs) => store.setMarkerExpiresAt(id, Date.now() + durationMs)}
           />
         )}
 

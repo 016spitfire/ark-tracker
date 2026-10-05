@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import type { ArkMap, Category, Marker } from '../types'
 import { formatDateTime, formatRemaining } from '../utils/time'
+import ResyncForm from './ResyncForm'
+import TimerDisclaimer from './TimerDisclaimer'
 
 export type Filters = {
   mapId: string // 'all' or a map id
@@ -16,6 +19,7 @@ type Props = {
   now: number
   onEdit: (id: string) => void
   onToggleDone: (marker: Marker) => void
+  onResync: (id: string, durationMs: number) => void
 }
 
 export default function MarkerList({
@@ -27,7 +31,11 @@ export default function MarkerList({
   now,
   onEdit,
   onToggleDone,
+  onResync,
 }: Props) {
+  // Only one card shows the resync row at a time
+  const [resyncingId, setResyncingId] = useState<string | null>(null)
+
   const categoryById = new Map(categories.map(c => [c.id, c]))
   const mapById = new Map(maps.map(m => [m.id, m]))
 
@@ -50,6 +58,7 @@ export default function MarkerList({
     const map = mapById.get(marker.mapId)
     const remaining = marker.expiresAt !== undefined ? marker.expiresAt - now : null
     const ready = remaining !== null && remaining <= 0
+    const canResync = isTimed(marker) && marker.status === 'active'
 
     return (
       <li
@@ -57,34 +66,52 @@ export default function MarkerList({
         className={`marker-card${marker.status === 'done' ? ' done' : ''}${ready ? ' ready' : ''}`}
         style={{ borderLeftColor: category?.color }}
       >
-        <div className="card-main" onClick={() => onEdit(marker.id)}>
-          <div className="card-title">
-            <span className="name">{marker.name}</span>
-            {isTimed(marker) && remaining !== null && (
-              <span className="timer">{ready ? 'READY' : formatRemaining(remaining)}</span>
+        <div className="card-row">
+          <div className="card-main" onClick={() => onEdit(marker.id)}>
+            <div className="card-title">
+              <span className="name">{marker.name}</span>
+              {isTimed(marker) && remaining !== null && (
+                <span className="timer">{ready ? 'READY' : formatRemaining(remaining)}</span>
+              )}
+            </div>
+            <div className="card-meta">
+              <span style={{ color: category?.color }}>{category?.name ?? 'Unknown category'}</span>
+              {filters.mapId === 'all' && <span>{map?.name ?? 'Unknown map'}</span>}
+              <span className="coords">{marker.lat}, {marker.lon}</span>
+            </div>
+            {isTimed(marker) && marker.expiresAt !== undefined && (
+              <div className="card-meta">
+                {ready ? 'Ready since' : 'Ready at'} {formatDateTime(marker.expiresAt)}
+              </div>
+            )}
+            {marker.description && <p className="description">{marker.description}</p>}
+          </div>
+          <div className="card-actions">
+            <button onClick={() => onToggleDone(marker)}>
+              {marker.status === 'done' ? 'Reopen' : 'Done'}
+            </button>
+            {canResync && resyncingId !== marker.id && (
+              <button onClick={() => setResyncingId(marker.id)}>Resync</button>
             )}
           </div>
-          <div className="card-meta">
-            <span style={{ color: category?.color }}>{category?.name ?? 'Unknown category'}</span>
-            {filters.mapId === 'all' && <span>{map?.name ?? 'Unknown map'}</span>}
-            <span className="coords">{marker.lat}, {marker.lon}</span>
-          </div>
-          {isTimed(marker) && marker.expiresAt !== undefined && (
-            <div className="card-meta">
-              {ready ? 'Ready since' : 'Ready at'} {formatDateTime(marker.expiresAt)}
-            </div>
-          )}
-          {marker.description && <p className="description">{marker.description}</p>}
         </div>
-        <button className="done-toggle" onClick={() => onToggleDone(marker)}>
-          {marker.status === 'done' ? 'Reopen' : 'Done'}
-        </button>
+        {canResync && resyncingId === marker.id && (
+          <ResyncForm
+            onSave={durationMs => {
+              onResync(marker.id, durationMs)
+              setResyncingId(null)
+            }}
+            onCancel={() => setResyncingId(null)}
+          />
+        )}
       </li>
     )
   }
 
   return (
     <div className="marker-list">
+      <TimerDisclaimer />
+
       <div className="filters">
         <select
           value={filters.mapId}

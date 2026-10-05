@@ -167,6 +167,17 @@ section h2 {
   margin: 0 0 0.5rem;
 }
 
+.disclaimer {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  margin: 0 0 0.75rem;
+}
+
 .error {
   color: var(--danger);
   margin: 0;
@@ -198,8 +209,8 @@ section h2 {
 
 .marker-card {
   display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.6rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-left: 4px solid var(--border);
@@ -214,6 +225,12 @@ section h2 {
 
 .marker-card.done {
   opacity: 0.5;
+}
+
+.card-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
 }
 
 .card-main {
@@ -256,10 +273,25 @@ section h2 {
   white-space: pre-wrap;
 }
 
-.done-toggle {
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
   flex-shrink: 0;
+}
+
+.card-actions button {
   font-size: 0.85rem;
   padding: 0.35rem 0.6rem;
+}
+
+.resync-form {
+  border-top: 1px solid var(--border);
+  padding-top: 0.6rem;
+}
+
+.resync-form .actions {
+  margin-top: 0.6rem;
 }
 
 /* Form */

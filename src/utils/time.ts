@@ -2,6 +2,11 @@ export const MINUTE = 60_000
 export const HOUR = 60 * MINUTE
 export const DAY = 24 * HOUR
 
+// Blank or junk input counts as 0, so users can leave duration fields empty
+export function toWholeNumber(value: string): number {
+  return Math.max(0, parseInt(value, 10) || 0)
+}
+
 export function durationToMs(days: number, hours: number, minutes: number): number {
   return days * DAY + hours * HOUR + minutes * MINUTE
 }

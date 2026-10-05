@@ -50,6 +50,11 @@ export function useAppData() {
         ...d,
         markers: d.markers.map(m => (m.id === id ? { ...m, status } : m)),
       })),
+    setMarkerExpiresAt: (id: string, expiresAt: number) =>
+      setData(d => ({
+        ...d,
+        markers: d.markers.map(m => (m.id === id ? { ...m, expiresAt } : m)),
+      })),
 
     saveMap: (map: ArkMap) =>
       setData(d => ({ ...d, maps: upsert(d.maps, map) })),

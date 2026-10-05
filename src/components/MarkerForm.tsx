@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { ArkMap, Category, Marker } from '../types'
-import { durationToMs, formatRemaining } from '../utils/time'
+import { durationToMs, formatRemaining, toWholeNumber } from '../utils/time'
+import TimerDisclaimer from './TimerDisclaimer'
 
 type Props = {
   maps: ArkMap[]
@@ -10,10 +11,6 @@ type Props = {
   onSave: (marker: Marker) => void
   onDelete?: (id: string) => void
   onCancel: () => void
-}
-
-function toWholeNumber(value: string): number {
-  return Math.max(0, parseInt(value, 10) || 0)
 }
 
 // ARK coordinates run 0-100. Returns null for anything outside that.
@@ -87,6 +84,7 @@ export default function MarkerForm({
   return (
     <form className="marker-form" onSubmit={handleSubmit}>
       <h2>{marker ? 'Edit Marker' : 'New Marker'}</h2>
+      {hasTimer && <TimerDisclaimer />}
 
       <label>
         Map

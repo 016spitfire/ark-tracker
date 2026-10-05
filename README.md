@@ -33,6 +33,7 @@ npm run build     # type-check + production build
 - Everything is saved as one JSON object under the localStorage key `ark-tracker:data`.
 - A marker stores `expiresAt` as an absolute timestamp (created time + duration), so countdowns stay accurate while the app is closed.
 - Editing a timer marker with the duration fields left blank keeps the current timer. Entering a new duration restarts it from now.
+- **Resync** on an active timer card restarts its countdown from now, using the time the game currently shows. Use it when the in-game timer has drifted. The game's timers pause during server downtime and rewind on crash rollbacks, and the app can't detect either. A disclaimer about this appears on the main list and on the form for timer categories.
 - **Done** marks a marker as handled (looted, claimed, checked) without deleting it. Use "Show done" to see those markers again.
 - Categories control whether a marker has a timer. You can add, recolor, or toggle them in Settings.
 - Maps and categories that are still used by markers can't be deleted.
