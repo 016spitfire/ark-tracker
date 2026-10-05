@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from 'react'
-import { isAppData } from '../hooks/useAppData'
+import { migrate } from '../hooks/useAppData'
 import type { AppData, ArkMap, Category } from '../types'
 
 type Props = {
@@ -58,8 +58,9 @@ export default function Settings({
     if (!file) return
 
     try {
-      const parsed: unknown = JSON.parse(await file.text())
-      if (!isAppData(parsed)) throw new Error('Not an ARK Tracker export')
+      // Older exports are upgraded to the current format on the way in
+      const parsed = migrate(JSON.parse(await file.text()))
+      if (!parsed) throw new Error('Not an ARK Tracker export')
       if (confirm(`Replace everything on this device with ${parsed.markers.length} markers from "${file.name}"?`)) {
         onReplaceAll(parsed)
       }

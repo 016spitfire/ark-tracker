@@ -1,13 +1,15 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import { durationToMs, toWholeNumber } from '../utils/time'
 
 type Props = {
   onSave: (durationMs: number) => void
   onCancel: () => void
+  // Extra buttons shown after Resync and Cancel
+  children?: ReactNode
 }
 
 // Inline "the game says X is left" entry on a timer card. Restarts the countdown from now.
-export default function ResyncForm({ onSave, onCancel }: Props) {
+export default function ResyncForm({ onSave, onCancel, children }: Props) {
   const [days, setDays] = useState('')
   const [hours, setHours] = useState('')
   const [minutes, setMinutes] = useState('')
@@ -39,6 +41,7 @@ export default function ResyncForm({ onSave, onCancel }: Props) {
       <div className="actions">
         <button type="submit" className="primary" disabled={durationMs === 0}>Resync</button>
         <button type="button" onClick={onCancel}>Cancel</button>
+        {children}
       </div>
     </form>
   )

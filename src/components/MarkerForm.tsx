@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
-import type { ArkMap, Category, Marker } from '../types'
+import type { ArkMap, Category, Marker, MarkerStatus, Timer } from '../types'
 import { durationToMs, formatRemaining, toWholeNumber } from '../utils/time'
+import { sortTimers, TIMER_LABEL_SUGGESTIONS } from '../utils/timers'
 import TimerDisclaimer from './TimerDisclaimer'
 
 type Props = {
@@ -11,6 +12,30 @@ type Props = {
   onSave: (marker: Marker) => void
   onDelete?: (id: string) => void
   onCancel: () => void
+}
+
+// A timer as it's being edited. Duration fields are strings straight from the inputs.
+type TimerDraft = {
+  id: string
+  label: string
+  days: string
+  hours: string
+  minutes: string
+  // Set for timers that already exist. Blank duration fields keep this.
+  expiresAt?: number
+  status: MarkerStatus
+}
+
+function newDraft(): TimerDraft {
+  return { id: crypto.randomUUID(), label: '', days: '', hours: '', minutes: '', status: 'active' }
+}
+
+function toDraft(timer: Timer): TimerDraft {
+  return { ...timer, days: '', hours: '', minutes: '' }
+}
+
+function draftDurationMs(draft: TimerDraft): number {
+  return durationToMs(toWholeNumber(draft.days), toWholeNumber(draft.hours), toWholeNumber(draft.minutes))
 }
 
 // ARK coordinates run 0-100. Returns null for anything outside that.
@@ -35,14 +60,17 @@ export default function MarkerForm({
   const [description, setDescription] = useState(marker?.description ?? '')
   const [lat, setLat] = useState(marker ? String(marker.lat) : '')
   const [lon, setLon] = useState(marker ? String(marker.lon) : '')
-  const [days, setDays] = useState('')
-  const [hours, setHours] = useState('')
-  const [minutes, setMinutes] = useState('')
+  // Existing timers, soonest first. A new marker starts with one blank timer to fill in.
+  const [drafts, setDrafts] = useState<TimerDraft[]>(() =>
+    marker?.timers.length ? sortTimers(marker.timers).map(toDraft) : [newDraft()],
+  )
   const [error, setError] = useState('')
 
   const category = categories.find(c => c.id === categoryId)
   const hasTimer = category?.hasTimer ?? false
-  const existingExpiresAt = marker?.expiresAt
+
+  const updateDraft = (id: string, changes: Partial<TimerDraft>) =>
+    setDrafts(ds => ds.map(d => (d.id === id ? { ...d, ...changes } : d)))
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -57,14 +85,24 @@ export default function MarkerForm({
     }
 
     const now = Date.now()
-    const durationMs = durationToMs(toWholeNumber(days), toWholeNumber(hours), toWholeNumber(minutes))
 
-    // Timer starts now. When editing, blank duration fields keep the existing timer.
-    let expiresAt: number | undefined
+    // Switching to a category without timers keeps the old ones (hidden), so switching
+    // back by mistake doesn't lose them.
+    let timers = marker?.timers ?? []
     if (hasTimer) {
-      if (durationMs > 0) expiresAt = now + durationMs
-      else if (existingExpiresAt !== undefined) expiresAt = existingExpiresAt
-      else return setError('Set a timer (days, hours, or minutes).')
+      timers = []
+      for (const draft of drafts) {
+        const durationMs = draftDurationMs(draft)
+        const label = draft.label.trim()
+        // A new duration restarts the timer from now. Blank keeps an existing timer.
+        let expiresAt: number
+        if (durationMs > 0) expiresAt = now + durationMs
+        else if (draft.expiresAt !== undefined) expiresAt = draft.expiresAt
+        else if (!label) continue // untouched blank row, skip it
+        else return setError(`Set a time for "${label}".`)
+        timers.push({ id: draft.id, label, expiresAt, status: draft.status })
+      }
+      if (timers.length === 0) return setError('Add at least one timer.')
     }
 
     onSave({
@@ -76,7 +114,7 @@ export default function MarkerForm({
       lat: latNum,
       lon: lonNum,
       createdAt: marker?.createdAt ?? now,
-      expiresAt,
+      timers,
       status: marker?.status ?? 'active',
     })
   }
@@ -122,29 +160,71 @@ export default function MarkerForm({
 
       {hasTimer && (
         <fieldset>
-          <legend>Timer</legend>
-          {existingExpiresAt !== undefined && (
-            <p className="hint">
-              {existingExpiresAt > Date.now()
-                ? `Currently ready in ${formatRemaining(existingExpiresAt - Date.now())}.`
-                : 'Currently ready.'}{' '}
-              Leave blank to keep it, or enter a new time to restart from now.
-            </p>
-          )}
-          <div className="row">
-            <label>
-              Days
-              <input inputMode="numeric" value={days} onChange={e => setDays(e.target.value)} placeholder="0" />
-            </label>
-            <label>
-              Hours
-              <input inputMode="numeric" value={hours} onChange={e => setHours(e.target.value)} placeholder="0" />
-            </label>
-            <label>
-              Minutes
-              <input inputMode="numeric" value={minutes} onChange={e => setMinutes(e.target.value)} placeholder="0" />
-            </label>
-          </div>
+          <legend>Timers</legend>
+          <p className="hint">
+            Enter the time the game shows. On existing timers, leave the time blank to keep it, or
+            enter a new one to restart from now.
+          </p>
+          <datalist id="timer-labels">
+            {TIMER_LABEL_SUGGESTIONS.map(label => (
+              <option key={label} value={label} />
+            ))}
+          </datalist>
+          <ul className="timer-drafts">
+            {drafts.map(draft => (
+              <li key={draft.id}>
+                <div className="add-row">
+                  <input
+                    value={draft.label}
+                    onChange={e => updateDraft(draft.id, { label: e.target.value })}
+                    list="timer-labels"
+                    placeholder="Label, e.g. Tames, Metal"
+                  />
+                  <button
+                    type="button"
+                    className="danger"
+                    onClick={() => setDrafts(ds => ds.filter(d => d.id !== draft.id))}
+                  >
+                    Remove
+                  </button>
+                </div>
+                {draft.expiresAt !== undefined && (
+                  <div className="draft-status">
+                    <span className="hint">
+                      {draft.expiresAt > Date.now()
+                        ? `Ready in ${formatRemaining(draft.expiresAt - Date.now())}`
+                        : 'Ready'}
+                    </span>
+                    <label className="checkbox">
+                      <input
+                        type="checkbox"
+                        checked={draft.status === 'done'}
+                        onChange={e => updateDraft(draft.id, { status: e.target.checked ? 'done' : 'active' })}
+                      />
+                      Done
+                    </label>
+                  </div>
+                )}
+                <div className="row">
+                  <label>
+                    Days
+                    <input inputMode="numeric" value={draft.days} onChange={e => updateDraft(draft.id, { days: e.target.value })} placeholder="0" />
+                  </label>
+                  <label>
+                    Hours
+                    <input inputMode="numeric" value={draft.hours} onChange={e => updateDraft(draft.id, { hours: e.target.value })} placeholder="0" />
+                  </label>
+                  <label>
+                    Minutes
+                    <input inputMode="numeric" value={draft.minutes} onChange={e => updateDraft(draft.id, { minutes: e.target.value })} placeholder="0" />
+                  </label>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={() => setDrafts(ds => [...ds, newDraft()])}>
+            + Add timer
+          </button>
         </fieldset>
       )}
 

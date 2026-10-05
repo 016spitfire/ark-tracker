@@ -2,7 +2,7 @@
 
 A PWA for tracking locations in ARK: Survival Evolved on a PvE cluster.
 
-- **Timer markers**: abandoned bases and neglected tames. You enter the decay time (days/hours/minutes) when you log it, and the countdown runs from that moment.
+- **Timer markers**: abandoned bases and neglected tames. A marker can hold several labeled timers (tame groups, each building material, generators), each with the decay time the game shows. Each countdown runs from the moment you enter it.
 - **Points of interest**: caves, artifacts, spawns. Just a name and a location.
 
 All data lives in the browser's localStorage on each device. There are no accounts and no server.
@@ -46,9 +46,11 @@ Any other URL redirects to `/`.
 ## How the data works
 
 - Everything is saved as one JSON object under the localStorage key `ark-tracker:data`.
-- A marker stores `expiresAt` as an absolute timestamp (created time + duration), so countdowns stay accurate while the app is closed.
-- Editing a timer marker with the duration fields left blank keeps the current timer. Entering a new duration restarts it from now.
-- **Resync** on an active timer card restarts its countdown from now, using the time the game currently shows. Use it when the in-game timer has drifted. The game's timers pause during server downtime and rewind on crash rollbacks, and the app can't detect either. A disclaimer about this appears on the main list and on the form for timer categories.
+- The data has a `version` number. When the shape changes, `migrate()` in `src/hooks/useAppData.ts` upgrades older saves and older export files as they load, one version at a time. Version 2 replaced a marker's single `expiresAt` with a `timers` list.
+- Each timer stores `expiresAt` as an absolute timestamp (entry time + duration), so countdowns stay accurate while the app is closed.
+- Timer markers sort by their nearest active timer. Cards with more than one timer list each one; tap a timer row to resync it or mark it done. Done timers follow the "Show done" toggle, the same as done markers.
+- In the edit form, add timers with **+ Add timer**. On existing timers, leave the duration blank to keep it, or enter a new one to restart it from now.
+- **Resync** restarts a timer's countdown from now, using the time the game currently shows. Use it when the in-game timer has drifted. The game's timers pause during server downtime and rewind on crash rollbacks, and the app can't detect either. A disclaimer about this appears on the main list and on the form for timer categories.
 - **Done** marks a marker as handled (looted, claimed, checked) without deleting it. Use "Show done" to see those markers again.
 - Categories control whether a marker has a timer. You can add, recolor, or toggle them in Settings.
 - Maps and categories that are still used by markers can't be deleted.

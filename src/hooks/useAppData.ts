@@ -1,21 +1,46 @@
 import { useEffect, useState } from 'react'
 import { DEFAULT_DATA } from '../data/defaults'
-import type { AppData, ArkMap, Category, Marker, MarkerStatus } from '../types'
+import type { AppData, ArkMap, Category, Marker, MarkerStatus, Timer } from '../types'
 
 const STORAGE_KEY = 'ark-tracker:data'
 
-export function isAppData(value: unknown): value is AppData {
-  if (typeof value !== 'object' || value === null) return false
+// Version 1 markers had a single optional timer
+type MarkerV1 = Omit<Marker, 'timers'> & { expiresAt?: number }
+
+// Upgrades a save (or an imported export) from any older version to the current shape.
+// Each step handles one version bump, so a v1 save runs every step in order.
+// Returns null if the value isn't ARK Tracker data at all.
+export function migrate(value: unknown): AppData | null {
+  if (typeof value !== 'object' || value === null) return null
   const data = value as Record<string, unknown>
-  return Array.isArray(data.maps) && Array.isArray(data.categories) && Array.isArray(data.markers)
+  if (!Array.isArray(data.maps) || !Array.isArray(data.categories) || !Array.isArray(data.markers)) {
+    return null
+  }
+
+  let version = typeof data.version === 'number' ? data.version : 1
+  let markers = data.markers
+
+  // v1 -> v2: single expiresAt becomes a list of labeled timers
+  if (version === 1) {
+    markers = (markers as MarkerV1[]).map(({ expiresAt, ...marker }) => ({
+      ...marker,
+      timers:
+        expiresAt === undefined
+          ? []
+          : [{ id: crypto.randomUUID(), label: '', expiresAt, status: 'active' }],
+    }))
+    version = 2
+  }
+
+  return { ...(data as AppData), version: 2, markers: markers as Marker[] }
 }
 
 function load(): AppData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
-      const parsed: unknown = JSON.parse(raw)
-      if (isAppData(parsed)) return parsed
+      const migrated = migrate(JSON.parse(raw))
+      if (migrated) return migrated
     }
   } catch {
     // Corrupt save: fall through to defaults rather than crash
@@ -50,10 +75,14 @@ export function useAppData() {
         ...d,
         markers: d.markers.map(m => (m.id === id ? { ...m, status } : m)),
       })),
-    setMarkerExpiresAt: (id: string, expiresAt: number) =>
+    updateTimer: (markerId: string, timerId: string, changes: Partial<Timer>) =>
       setData(d => ({
         ...d,
-        markers: d.markers.map(m => (m.id === id ? { ...m, expiresAt } : m)),
+        markers: d.markers.map(m =>
+          m.id === markerId
+            ? { ...m, timers: m.timers.map(t => (t.id === timerId ? { ...t, ...changes } : t)) }
+            : m,
+        ),
       })),
 
     saveMap: (map: ArkMap) =>

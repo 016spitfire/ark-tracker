@@ -2,7 +2,7 @@ import type { AppData } from '../types'
 
 // Starting data for a fresh install. Everything here is editable in Settings.
 export const DEFAULT_DATA: AppData = {
-  version: 1,
+  version: 2,
   maps: [
     { id: 'the-island', name: 'The Island' },
     { id: 'scorched-earth', name: 'Scorched Earth' },

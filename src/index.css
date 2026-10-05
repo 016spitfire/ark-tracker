@@ -314,6 +314,57 @@ section h2 {
   padding: 0.35rem 0.6rem;
 }
 
+.timer-rows {
+  border-top: 1px solid var(--border);
+  padding-top: 0.4rem;
+}
+
+.marker-list .timer-rows {
+  gap: 0.15rem;
+}
+
+.timer-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.timer-row:not(:disabled):hover {
+  background: var(--surface-2);
+}
+
+.timer-row:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.timer-row .timer {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.timer-row.ready .timer {
+  color: var(--ready);
+  font-weight: 700;
+}
+
+.timer-row.done {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.timer-row.done .timer {
+  color: var(--text-dim);
+}
+
 .resync-form {
   border-top: 1px solid var(--border);
   padding-top: 0.6rem;
@@ -335,6 +386,34 @@ fieldset {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.6rem 0.8rem 0.8rem;
+  margin: 0;
+}
+
+.timer-drafts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.timer-drafts li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.timer-drafts li + li {
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.draft-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.draft-status .hint {
   margin: 0;
 }
 
