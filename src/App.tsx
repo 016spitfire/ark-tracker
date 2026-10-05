@@ -139,6 +139,7 @@ function MarkerFormPage({ data, ...props }: MarkerFormPageProps) {
       marker={marker}
       markers={data.markers}
       duplicateRadius={data.settings.duplicateRadius}
+      decayDays={data.settings.decayDays}
       {...props}
     />
   )

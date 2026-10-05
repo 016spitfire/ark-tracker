@@ -38,6 +38,8 @@ export type Marker = {
 export type AppSettings = {
   // How close (in map coordinate units) an existing marker must be to count as a possible duplicate
   duplicateRadius: number
+  // Full decay time in days per material id (see src/data/decay.ts). Defaults to official.
+  decayDays: Record<string, number>
 }
 
 // Everything the app saves, stored as one object in localStorage.

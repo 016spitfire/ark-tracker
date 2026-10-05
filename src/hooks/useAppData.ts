@@ -33,7 +33,13 @@ export function migrate(value: unknown): AppData | null {
   }
 
   // New settings get their defaults without a version bump, since nothing old changes shape
-  const settings = { ...DEFAULT_SETTINGS, ...(data.settings as Partial<AppSettings> | undefined) }
+  const saved = data.settings as Partial<AppSettings> | undefined
+  const settings: AppSettings = {
+    ...DEFAULT_SETTINGS,
+    ...saved,
+    // Merged one level deeper, so materials added in later versions get their defaults too
+    decayDays: { ...DEFAULT_SETTINGS.decayDays, ...saved?.decayDays },
+  }
 
   return { ...(data as AppData), version: 2, markers: markers as Marker[], settings }
 }

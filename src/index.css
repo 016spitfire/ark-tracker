@@ -389,6 +389,38 @@ fieldset {
   margin: 0;
 }
 
+.timer-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.decay-calculator {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+}
+
+.decay-calculator .hint,
+.decay-note {
+  margin: 0;
+}
+
+.material-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+}
+
+.material-checks label {
+  color: var(--text);
+}
+
 .duplicate-warning {
   border: 1px solid var(--accent);
   border-radius: 8px;
@@ -422,6 +454,29 @@ fieldset {
 
 .radius-input {
   max-width: 8rem;
+}
+
+.multiplier-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.multiplier-row label {
+  max-width: 7rem;
+}
+
+.decay-name {
+  flex: 1;
+}
+
+.decay-name .hint {
+  font-size: 0.8rem;
+}
+
+.decay-days {
+  max-width: 5rem;
 }
 
 .timer-drafts {

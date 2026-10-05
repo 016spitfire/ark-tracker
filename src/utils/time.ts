@@ -11,12 +11,19 @@ export function durationToMs(days: number, hours: number, minutes: number): numb
   return days * DAY + hours * HOUR + minutes * MINUTE
 }
 
-// "2d 4h 13m". Rounds up so a timer never reads "0m" before it's actually ready.
-export function formatRemaining(ms: number): string {
+// Rounds up to the minute so a timer never reads "0m" before it's actually ready
+export function splitDuration(ms: number): { days: number; hours: number; minutes: number } {
   const totalMinutes = Math.ceil(ms / MINUTE)
-  const days = Math.floor(totalMinutes / (24 * 60))
-  const hours = Math.floor((totalMinutes % (24 * 60)) / 60)
-  const minutes = totalMinutes % 60
+  return {
+    days: Math.floor(totalMinutes / (24 * 60)),
+    hours: Math.floor((totalMinutes % (24 * 60)) / 60),
+    minutes: totalMinutes % 60,
+  }
+}
+
+// "2d 4h 13m"
+export function formatRemaining(ms: number): string {
+  const { days, hours, minutes } = splitDuration(ms)
 
   const parts: string[] = []
   if (days) parts.push(`${days}d`)

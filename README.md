@@ -21,14 +21,19 @@ npm run build     # type-check + production build
 |---|---|
 | `src/App.tsx` | Header and routes; holds the data store and list filters |
 | `src/types.ts` | Data model: `ArkMap`, `Category`, `Marker`, `AppData` |
-| `src/data/defaults.ts` | Starting maps and categories for a fresh install |
+| `src/data/defaults.ts` | Starting maps, categories, and settings for a fresh install |
+| `src/data/decay.ts` | Materials and their official decay times |
 | `src/hooks/useAppData.ts` | Loads/saves `AppData` in localStorage, exposes save/delete actions |
 | `src/hooks/useNow.ts` | Ticking clock that keeps countdowns live |
 | `src/utils/time.ts` | Duration math and formatting |
+| `src/utils/timers.ts` | Timer helpers: sorting, nearest timer, label suggestions |
+| `src/utils/decay.ts` | Calculates a base's timers from one material's reading |
 | `src/components/MarkerList.tsx` | Main screen: filters, Timers section, Points of Interest section |
 | `src/components/MarkerForm.tsx` | Add/edit a marker |
 | `src/components/Settings.tsx` | Edit maps and categories, export/import JSON |
 | `src/components/ResyncForm.tsx` | Inline "time the game shows now" entry on timer cards |
+| `src/components/DecayCalculator.tsx` | "Fill from decay times" panel on the marker form |
+| `src/components/NumberInput.tsx` | Decimal input used in Settings |
 | `src/components/TimerDisclaimer.tsx` | Note about server downtime and rollbacks |
 | `vercel.json` | Sends every URL to `index.html` so routes work on refresh and direct links |
 
@@ -55,6 +60,19 @@ Any other URL redirects to `/`.
 - Categories control whether a marker has a timer. You can add, recolor, or toggle them in Settings.
 - Maps and categories that are still used by markers can't be deleted.
 - **Duplicate check**: when adding a marker, the form lists existing markers (including done ones) on the same map within the distance set in **Settings > Duplicate Check** (default 1.0). **Open it** jumps to that marker so you can resync it or add timers; **Save anyway** creates the new one. Settings are part of the saved data, so they're included in exports. New settings get their default values on load without a version bump.
+
+## Decay times
+
+Every decay timer at an abandoned base starts when the tribe goes offline. So one reading is enough to fill in the rest:
+
+```
+time gone       = full time (material you read) - time left (material you read)
+time left (any) = full time (that material) - time gone
+```
+
+On the marker form, **Fill from decay times** asks for one material's in-game timer and which other materials the base has, then adds a timer for each. A timer whose name already exists on the marker is updated instead of duplicated. Materials that would already have decayed are skipped and listed.
+
+Full times come from **Settings > Decay Times**. The defaults are official-server values from the [ARK wiki](https://ark.wiki.gg/wiki/Building). Private servers often scale decay, with separate multipliers for structures and tames. Enter them and press **Apply** to recalculate every row, then fix any single row that still doesn't match the game. To work out a server's structure multiplier, read two materials at one base: for example, `(metal time left - stone time left) / 4 days`, since official metal and stone are 4 days apart.
 
 ## Sharing between devices
 

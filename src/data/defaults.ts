@@ -1,7 +1,9 @@
 import type { AppData, AppSettings } from '../types'
+import { OFFICIAL_DECAY_DAYS } from './decay'
 
 export const DEFAULT_SETTINGS: AppSettings = {
   duplicateRadius: 1,
+  decayDays: OFFICIAL_DECAY_DAYS,
 }
 
 // Starting data for a fresh install. Everything here is editable in Settings.

@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import type { ArkMap, Category, Marker, MarkerStatus, Timer } from '../types'
-import { durationToMs, formatRemaining, toWholeNumber } from '../utils/time'
+import type { CalculatedTimer } from '../utils/decay'
+import { durationToMs, formatRemaining, splitDuration, toWholeNumber } from '../utils/time'
 import { sortTimers, TIMER_LABEL_SUGGESTIONS } from '../utils/timers'
+import DecayCalculator from './DecayCalculator'
 import TimerDisclaimer from './TimerDisclaimer'
 
 type Props = {
@@ -11,6 +13,7 @@ type Props = {
   // Every marker, for the duplicate check on new markers
   markers: Marker[]
   duplicateRadius: number
+  decayDays: Record<string, number>
   onOpenMarker: (id: string) => void
   defaultMapId?: string
   onSave: (marker: Marker) => void
@@ -55,6 +58,7 @@ export default function MarkerForm({
   marker,
   markers,
   duplicateRadius,
+  decayDays,
   onOpenMarker,
   defaultMapId,
   onSave,
@@ -90,6 +94,23 @@ export default function MarkerForm({
 
   const updateDraft = (id: string, changes: Partial<TimerDraft>) =>
     setDrafts(ds => ds.map(d => (d.id === id ? { ...d, ...changes } : d)))
+
+  // Calculated timers update a same-named timer if there is one, otherwise get added.
+  // Untouched blank rows are dropped so they don't sit above the new ones.
+  function addCalculated(timers: CalculatedTimer[]) {
+    setDrafts(ds => {
+      let next = ds.filter(d => d.label.trim() || d.expiresAt !== undefined || draftDurationMs(d) > 0)
+      for (const { label, remainingMs } of timers) {
+        const { days, hours, minutes } = splitDuration(remainingMs)
+        const fields = { days: String(days), hours: String(hours), minutes: String(minutes) }
+        const match = next.find(d => d.label.trim().toLowerCase() === label.toLowerCase())
+        next = match
+          ? next.map(d => (d === match ? { ...d, ...fields } : d))
+          : [...next, { ...newDraft(), label, ...fields }]
+      }
+      return next
+    })
+  }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -260,9 +281,12 @@ export default function MarkerForm({
               </li>
             ))}
           </ul>
-          <button type="button" onClick={() => setDrafts(ds => [...ds, newDraft()])}>
-            + Add timer
-          </button>
+          <div className="timer-buttons">
+            <button type="button" onClick={() => setDrafts(ds => [...ds, newDraft()])}>
+              + Add timer
+            </button>
+            <DecayCalculator decayDays={decayDays} onAdd={addCalculated} />
+          </div>
         </fieldset>
       )}
 

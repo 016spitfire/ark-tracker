@@ -1,6 +1,8 @@
 import { useState, type ChangeEvent } from 'react'
+import { DECAY_MATERIALS } from '../data/decay'
 import { migrate } from '../hooks/useAppData'
 import type { AppData, AppSettings, ArkMap, Category } from '../types'
+import NumberInput from './NumberInput'
 
 type Props = {
   data: AppData
@@ -22,8 +24,19 @@ export default function Settings({
   onReplaceAll,
 }: Props) {
   const [newMapName, setNewMapName] = useState('')
-  // Kept as text while typing so "0." doesn't snap back to "0"
-  const [radius, setRadius] = useState(String(data.settings.duplicateRadius))
+  const [structureMultiplier, setStructureMultiplier] = useState(1)
+  const [tameMultiplier, setTameMultiplier] = useState(1)
+
+  // Rewrites every row from the official times. Individual rows can still be edited after.
+  function applyMultipliers() {
+    const decayDays = Object.fromEntries(
+      DECAY_MATERIALS.map(m => [
+        m.id,
+        m.officialDays * (m.kind === 'tame' ? tameMultiplier : structureMultiplier),
+      ]),
+    )
+    onSaveSettings({ decayDays })
+  }
   const [newCategoryName, setNewCategoryName] = useState('')
 
   const markerCount = (key: 'mapId' | 'categoryId', id: string) =>
@@ -161,18 +174,47 @@ export default function Settings({
         </p>
         <label className="radius-input">
           Distance
-          <input
-            inputMode="decimal"
-            value={radius}
-            onChange={e => {
-              setRadius(e.target.value)
-              const n = Number(e.target.value)
-              if (e.target.value.trim() !== '' && Number.isFinite(n) && n >= 0) {
-                onSaveSettings({ duplicateRadius: n })
-              }
-            }}
+          <NumberInput
+            value={data.settings.duplicateRadius}
+            onChange={duplicateRadius => onSaveSettings({ duplicateRadius })}
           />
         </label>
+      </section>
+
+      <section>
+        <h2>Decay Times</h2>
+        <p className="hint">
+          Full decay time in days for each material, used by "Fill from decay times" on the marker
+          form. Defaults are official-server values. If your server scales decay, enter its
+          multipliers and Apply, then adjust any row that still doesn't match the game.
+        </p>
+        <div className="multiplier-row">
+          <label>
+            Structures ×
+            <NumberInput value={structureMultiplier} onChange={setStructureMultiplier} />
+          </label>
+          <label>
+            Tames ×
+            <NumberInput value={tameMultiplier} onChange={setTameMultiplier} />
+          </label>
+          <button onClick={applyMultipliers}>Apply</button>
+        </div>
+        <ul className="edit-list decay-list">
+          {DECAY_MATERIALS.map(m => (
+            <li key={m.id}>
+              <span className="decay-name">
+                {m.name} <span className="hint">(official {m.officialDays})</span>
+              </span>
+              <NumberInput
+                className="decay-days"
+                value={data.settings.decayDays[m.id]}
+                onChange={days =>
+                  onSaveSettings({ decayDays: { ...data.settings.decayDays, [m.id]: days } })
+                }
+              />
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section>

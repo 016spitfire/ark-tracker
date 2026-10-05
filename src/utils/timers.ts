@@ -1,18 +1,8 @@
+import { DECAY_MATERIALS } from '../data/decay'
 import type { Marker, Timer } from '../types'
 
 // Offered as you type a timer label. Free text is still allowed.
-export const TIMER_LABEL_SUGGESTIONS = [
-  'Tames',
-  'Thatch',
-  'Wood',
-  'Stone',
-  'Greenhouse',
-  'Metal',
-  'Tek',
-  'Generator',
-  'Transmitter',
-  'Dedi Storage',
-]
+export const TIMER_LABEL_SUGGESTIONS = DECAY_MATERIALS.map(m => m.name)
 
 // Timers carried over from before labels existed have an empty label
 export function timerLabel(timer: Timer): string {
