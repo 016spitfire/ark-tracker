@@ -10,14 +10,14 @@ import {
 import NumberInput from './NumberInput'
 
 const LEAD_OPTIONS = [
+  { minutes: 1440, label: '1 day' },
+  { minutes: 720, label: '12 hours' },
+  { minutes: 360, label: '6 hours' },
+  { minutes: 120, label: '2 hours' },
+  { minutes: 60, label: '1 hour' },
+  { minutes: 30, label: '30 minutes' },
+  { minutes: 15, label: '15 minutes' },
   { minutes: 0, label: 'When ready' },
-  { minutes: 15, label: '15 minutes before' },
-  { minutes: 30, label: '30 minutes before' },
-  { minutes: 60, label: '1 hour before' },
-  { minutes: 120, label: '2 hours before' },
-  { minutes: 360, label: '6 hours before' },
-  { minutes: 720, label: '12 hours before' },
-  { minutes: 1440, label: '1 day before' },
 ]
 
 type Props = {
@@ -222,17 +222,46 @@ export default function Settings({
             </label>
             {notificationsOn && (
               <div className="notification-options">
-                <label>
-                  Notify
-                  <select
-                    value={data.settings.notifyLeadMinutes}
-                    onChange={e => onSaveSettings({ notifyLeadMinutes: Number(e.target.value) })}
-                  >
-                    {LEAD_OPTIONS.map(o => (
-                      <option key={o.minutes} value={o.minutes}>{o.label}</option>
-                    ))}
-                  </select>
-                </label>
+                <p className="hint">Alert me before a timer is ready:</p>
+                <div className="material-checks">
+                  {LEAD_OPTIONS.map(o => {
+                    const leads = data.settings.notifyLeadMinutes
+                    return (
+                      <label key={o.minutes} className="checkbox">
+                        <input
+                          type="checkbox"
+                          checked={leads.includes(o.minutes)}
+                          onChange={e =>
+                            onSaveSettings({
+                              notifyLeadMinutes: e.target.checked
+                                ? [...leads, o.minutes]
+                                : leads.filter(m => m !== o.minutes),
+                            })
+                          }
+                        />
+                        {o.label}
+                      </label>
+                    )
+                  })}
+                </div>
+
+                <div className="daily-summary">
+                  <label className="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={data.settings.dailySummaryEnabled}
+                      onChange={e => onSaveSettings({ dailySummaryEnabled: e.target.checked })}
+                    />
+                    Daily summary of timers ready in the next 24 hours, at
+                  </label>
+                  <input
+                    type="time"
+                    value={data.settings.dailySummaryTime}
+                    disabled={!data.settings.dailySummaryEnabled}
+                    onChange={e => e.target.value && onSaveSettings({ dailySummaryTime: e.target.value })}
+                  />
+                </div>
+
                 <button
                   onClick={() =>
                     showNotification('ARK Tracker', {

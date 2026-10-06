@@ -42,8 +42,11 @@ export type AppSettings = {
   decayDays: Record<string, number>
   // The user's choice. Notifications also need browser permission, which is per device.
   notificationsEnabled: boolean
-  // How long before a timer is ready to notify. 0 = when it's ready.
-  notifyLeadMinutes: number
+  // When to notify, in minutes before a timer is ready. 0 = when it's ready.
+  notifyLeadMinutes: number[]
+  // A once-a-day count of timers ready in the next 24 hours, at a local time ("HH:MM")
+  dailySummaryEnabled: boolean
+  dailySummaryTime: string
 }
 
 // Everything the app saves, stored as one object in localStorage.

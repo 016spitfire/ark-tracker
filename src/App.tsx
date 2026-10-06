@@ -5,12 +5,14 @@ import MarkerList, { type Filters } from './components/MarkerList'
 import Settings from './components/Settings'
 import { useAppData } from './hooks/useAppData'
 import { useNow } from './hooks/useNow'
+import { useNotificationScheduler } from './hooks/useNotificationScheduler'
 import type { AppData, Marker } from './types'
 
 export default function App() {
   const store = useAppData()
   const { data } = store
   const now = useNow()
+  useNotificationScheduler(data)
   const navigate = useNavigate()
   const location = useLocation()
 

@@ -42,17 +42,20 @@ Ruled out:
 
 ### Milestone 1: In-app notifications (no server)
 
-- [x] Notification settings saved in `AppData.settings`: `notificationsEnabled`, `notifyLeadMinutes` (default 60)
+- [x] Notification settings saved in `AppData.settings`: `notificationsEnabled`, `notifyLeadMinutes` (list, default 1 hour before + when ready), `dailySummaryEnabled`, `dailySummaryTime`
 - [x] Enable checkbox requests permission on tap (browsers require a user gesture)
 - [x] Test notification button
-- [ ] Scheduler: on every app open and every timer change, find the next due notification and set one wake-up for it, then schedule the next after it fires
-- [ ] Chain long waits: `setTimeout` maxes out around 24.8 days, and timers can run for months
-- [ ] Record which timers have already notified, so a reload doesn't repeat them
-- [ ] Catch-up on open: one summary for timers that came due while the app was closed ("3 timers ready")
+- [x] Scheduler: on every app open and every timer change, find the next due notification and set one wake-up for it, then schedule the next after it fires (`src/utils/notificationSchedule.ts` rules, `src/hooks/useNotificationScheduler.ts` wiring)
+- [x] Chain long waits: `setTimeout` maxes out around 24.8 days, and timers can run for months (re-checks at least every 6 hours)
+- [x] Record which timers have already notified, so a reload doesn't repeat them (localStorage `ark-tracker:notify-state`, per device)
+- [x] Catch-up on open: one "While you were away" notification for alerts missed while the app was closed
 - [x] Switch `vite-plugin-pwa` to our own service worker file (`injectManifest`): `src/sw.ts`
-- [ ] `notificationclick` handler opens the related card (handler done in `src/sw.ts`; notifications need to carry the card's URL)
+- [x] `notificationclick` handler opens the related card
 - [x] Detect iPhone not installed to home screen and explain
 - [x] Settings note: these only fire while the app is open
+- [x] Multiple alerts per timer (checkboxes: 1 day, 12h, 6h, 2h, 1h, 30m, 15m, when ready)
+- [x] Daily summary at a local time: count of timers ready in the next 24 hours, soonest named
+- [x] New or resynced timers only alert going forward (no instant "1 hour before" on a 10-minute timer)
 - [ ] README updated
 
 ### Milestone 2: Calendar export (optional)
@@ -97,7 +100,7 @@ Ruled out:
 
 ## Open decisions
 
-- [ ] Default lead time, and whether to notify both before and at ready
+- [x] Default lead time, and whether to notify both before and at ready: multiple alerts allowed, default 1 hour before + when ready
 - [ ] Whether individual timers can opt out (for example, no alert for a 300-day dedi)
 - [ ] Milestone 2: in or skip
 - [ ] When to merge `feature/notifications` into `main`
@@ -107,6 +110,7 @@ Ruled out:
 - 2026-10-05: Push stack is Vercel Functions + Upstash Redis + cron-job.org (see Background)
 - 2026-10-05: ARK Tracker stays free. No donations or paywall in the app; a credit link to the portfolio only (fan content guidelines)
 - 2026-10-06: Plan written; work happens on `feature/notifications`
+- 2026-10-06: Multiple alerts per timer (user picks any of 8 lead times) plus an optional daily summary at a local time. Daily summary is skipped when nothing is due.
 
 ## References
 

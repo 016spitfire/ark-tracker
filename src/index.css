@@ -475,13 +475,30 @@ fieldset {
 
 .notification-options {
   display: flex;
-  align-items: flex-end;
-  gap: 0.5rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
   margin: 0.6rem 0;
 }
 
-.notification-options label {
-  flex: 1;
+.notification-options .hint {
+  margin: 0;
+}
+
+.daily-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.daily-summary label.checkbox {
+  white-space: normal;
+  color: var(--text);
+}
+
+.daily-summary input[type='time'] {
+  width: auto;
 }
 
 .multiplier-row {

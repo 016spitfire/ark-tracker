@@ -74,6 +74,16 @@ On the marker form, **Fill from decay times** asks for one material's in-game ti
 
 Full times come from **Settings > Decay Times**. The defaults are official-server values from the [ARK wiki](https://ark.wiki.gg/wiki/Building). Private servers often scale decay, with separate multipliers for structures and tames. Enter them and press **Apply** to recalculate every row, then fix any single row that still doesn't match the game. To work out a server's structure multiplier, read two materials at one base: for example, `(metal time left - stone time left) / 4 days`, since official metal and stone are 4 days apart.
 
+## Notifications
+
+**Settings > Notifications** turns on alerts for timers. Pick any number of alert times (1 day before down to when ready), and optionally a daily summary at a set local time listing timers ready in the next 24 hours. Tapping an alert opens that marker.
+
+- Alerts currently only fire while the app is open (a tab, or the installed app in the background). Push notifications with the app closed are planned; see `docs/notifications-plan.md`.
+- Scheduling rules live in `src/utils/notificationSchedule.ts` (pure functions, no browser APIs). `src/hooks/useNotificationScheduler.ts` runs them, shows notifications, and sets the next wake-up.
+- What's already been sent is stored per device under `ark-tracker:notify-state`, so reloads don't repeat alerts. New or resynced timers only alert going forward. Alerts missed while the app was closed arrive as one "While you were away" notification.
+- On iPhone and iPad, notifications only work from the Home Screen app (iOS 16.4+).
+- The service worker is `src/sw.ts` (vite-plugin-pwa `injectManifest`). It doesn't run under `npm run dev`; use `npm run build && npm run preview` to test anything that depends on it.
+
 ## Sharing between devices
 
 Each device keeps its own data. To copy it over, go to **Settings > Export** on one device and **Settings > Import** on the other. Importing replaces everything on the receiving device. Export also works as a backup, since clearing browser data wipes the app.

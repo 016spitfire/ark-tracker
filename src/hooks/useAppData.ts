@@ -39,6 +39,10 @@ export function migrate(value: unknown): AppData | null {
     ...saved,
     // Merged one level deeper, so materials added in later versions get their defaults too
     decayDays: { ...DEFAULT_SETTINGS.decayDays, ...saved?.decayDays },
+    // Briefly a single number during development; anything that isn't a list gets the default
+    notifyLeadMinutes: Array.isArray(saved?.notifyLeadMinutes)
+      ? saved.notifyLeadMinutes
+      : DEFAULT_SETTINGS.notifyLeadMinutes,
   }
 
   return { ...(data as AppData), version: 2, markers: markers as Marker[], settings }
