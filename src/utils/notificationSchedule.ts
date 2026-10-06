@@ -13,9 +13,10 @@ export type NotifyState = {
   seen: Record<string, number>
   // Alerts already shown (or skipped as superseded)
   sent: string[]
-  // Local date ("YYYY-MM-DD") of the last daily summary. "" = none yet.
-  // Missing = fresh state (notifications just turned on).
-  lastDaily?: string
+  // When daily summaries were last handled. A summary is due once a scheduled time
+  // passes this. Keeps moving forward while the summary is off, so turning it on doesn't
+  // send a summary for a time that already passed. Missing = fresh state.
+  lastSummaryAt?: number
 }
 
 export const EMPTY_STATE: NotifyState = { seen: {}, sent: [] }
@@ -71,11 +72,6 @@ function describe(alert: Alert, now: number): string {
   const remaining = alert.timer.expiresAt - now
   const label = timerLabel(alert.timer)
   return remaining > 0 ? `${label} ready in ${formatRemaining(remaining)}` : `${label} is ready`
-}
-
-function localDate(time: number): string {
-  const d = new Date(time)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 // Today's (or the given day's) summary time as a timestamp, in local time
@@ -149,17 +145,19 @@ export function checkNotifications(
     })
   }
 
-  // Daily summary: once per local day, at or after the chosen time
+  // Daily summary: due when the most recent scheduled time is later than the last one
+  // handled. Catches up once if the app was closed at that time.
   const { dailySummaryEnabled, dailySummaryTime } = data.settings
   const todaySummaryAt = summaryTimeOn(now, dailySummaryTime)
-  let lastDaily = previous.lastDaily
-  // Fresh state: if today's time already passed, count today as done, so turning
-  // notifications on in the evening doesn't send this morning's summary
-  if (lastDaily === undefined) lastDaily = now >= todaySummaryAt ? localDate(now) : ''
-  if (dailySummaryEnabled && now >= todaySummaryAt && lastDaily !== localDate(now)) {
+  const latestSummaryAt =
+    now >= todaySummaryAt ? todaySummaryAt : summaryTimeOn(now - 24 * HOUR, dailySummaryTime)
+  let lastSummaryAt = previous.lastSummaryAt ?? now
+  if (!dailySummaryEnabled) {
+    lastSummaryAt = now
+  } else if (latestSummaryAt > lastSummaryAt) {
     const summary = dailySummary(data, now)
     if (summary) notifications.push(summary)
-    lastDaily = localDate(now)
+    lastSummaryAt = now
   }
 
   // Next wake-up: the soonest unsent future alert, the next daily summary, or MAX_WAIT
@@ -168,8 +166,9 @@ export function checkNotifications(
     if (alert.fireAt > now && !sent.has(alert.key)) candidates.push(alert.fireAt)
   }
   if (dailySummaryEnabled) {
-    const nextSummaryAt = lastDaily === localDate(now) ? summaryTimeOn(now + 24 * HOUR, dailySummaryTime) : todaySummaryAt
-    if (nextSummaryAt > now) candidates.push(nextSummaryAt)
+    candidates.push(
+      todaySummaryAt > now ? todaySummaryAt : summaryTimeOn(now + 24 * HOUR, dailySummaryTime),
+    )
   }
 
   // Keep only sent keys for timers that still exist, so the record doesn't grow forever
@@ -177,7 +176,7 @@ export function checkNotifications(
 
   return {
     notifications,
-    state: { seen, sent: [...sent].filter(k => liveKeys.has(k)), lastDaily },
+    state: { seen, sent: [...sent].filter(k => liveKeys.has(k)), lastSummaryAt },
     nextCheckAt: Math.min(...candidates),
   }
 }
