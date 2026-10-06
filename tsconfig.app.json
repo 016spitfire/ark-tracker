@@ -29,4 +29,6 @@
     "noUncheckedSideEffectImports": true,
   },
   "include": ["src"],
+  // Checked by tsconfig.sw.json instead, with worker types
+  "exclude": ["src/sw.ts"],
 }

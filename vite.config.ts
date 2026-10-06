@@ -8,6 +8,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      // Use our own service worker (src/sw.ts) instead of a generated one, so it can
+      // handle notification taps and, later, push messages
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
       manifest: {
         name: "ARK Tracker",
         short_name: "ARK Tracker",
@@ -29,7 +34,7 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
+      injectManifest: {
         globPatterns: ["**/*.{js,css,html,png,svg,ico}"],
       },
     }),

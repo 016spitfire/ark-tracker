@@ -49,8 +49,8 @@ Ruled out:
 - [ ] Chain long waits: `setTimeout` maxes out around 24.8 days, and timers can run for months
 - [ ] Record which timers have already notified, so a reload doesn't repeat them
 - [ ] Catch-up on open: one summary for timers that came due while the app was closed ("3 timers ready")
-- [ ] Switch `vite-plugin-pwa` to our own service worker file (`injectManifest`)
-- [ ] `notificationclick` handler opens the related card
+- [x] Switch `vite-plugin-pwa` to our own service worker file (`injectManifest`): `src/sw.ts`
+- [ ] `notificationclick` handler opens the related card (handler done in `src/sw.ts`; notifications need to carry the card's URL)
 - [ ] Detect iPhone not installed to home screen and explain
 - [ ] Settings note: these only fire while the app is open
 - [ ] README updated
