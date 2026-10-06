@@ -109,6 +109,19 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+
+      <footer>
+        <p>
+          Built by{' '}
+          <a href="https://spencerkittle.vercel.app/" target="_blank" rel="noopener noreferrer">
+            Spencer Kittle
+          </a>
+        </p>
+        <p>
+          This is independent fan content and is not affiliated with, endorsed, or sponsored by
+          Studio Wildcard.
+        </p>
+      </footer>
     </div>
   )
 }

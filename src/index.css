@@ -183,6 +183,23 @@ section h2 {
   margin: 0;
 }
 
+footer {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+footer p {
+  margin: 0.25rem 0;
+}
+
+footer a {
+  color: var(--accent);
+}
+
 .empty {
   color: var(--text-dim);
   text-align: center;
