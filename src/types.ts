@@ -40,6 +40,10 @@ export type AppSettings = {
   duplicateRadius: number
   // Full decay time in days per material id (see src/data/decay.ts). Defaults to official.
   decayDays: Record<string, number>
+  // The user's choice. Notifications also need browser permission, which is per device.
+  notificationsEnabled: boolean
+  // How long before a timer is ready to notify. 0 = when it's ready.
+  notifyLeadMinutes: number
 }
 
 // Everything the app saves, stored as one object in localStorage.

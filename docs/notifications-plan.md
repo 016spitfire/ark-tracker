@@ -42,17 +42,17 @@ Ruled out:
 
 ### Milestone 1: In-app notifications (no server)
 
-- [ ] Notification settings saved in `AppData.settings`: enabled, lead time
-- [ ] Enable button requests permission on tap (browsers require a user gesture)
-- [ ] Test notification button
+- [x] Notification settings saved in `AppData.settings`: `notificationsEnabled`, `notifyLeadMinutes` (default 60)
+- [x] Enable checkbox requests permission on tap (browsers require a user gesture)
+- [x] Test notification button
 - [ ] Scheduler: on every app open and every timer change, find the next due notification and set one wake-up for it, then schedule the next after it fires
 - [ ] Chain long waits: `setTimeout` maxes out around 24.8 days, and timers can run for months
 - [ ] Record which timers have already notified, so a reload doesn't repeat them
 - [ ] Catch-up on open: one summary for timers that came due while the app was closed ("3 timers ready")
 - [x] Switch `vite-plugin-pwa` to our own service worker file (`injectManifest`): `src/sw.ts`
 - [ ] `notificationclick` handler opens the related card (handler done in `src/sw.ts`; notifications need to carry the card's URL)
-- [ ] Detect iPhone not installed to home screen and explain
-- [ ] Settings note: these only fire while the app is open
+- [x] Detect iPhone not installed to home screen and explain
+- [x] Settings note: these only fire while the app is open
 - [ ] README updated
 
 ### Milestone 2: Calendar export (optional)

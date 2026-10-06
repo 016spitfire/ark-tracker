@@ -473,6 +473,17 @@ fieldset {
   max-width: 8rem;
 }
 
+.notification-options {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin: 0.6rem 0;
+}
+
+.notification-options label {
+  flex: 1;
+}
+
 .multiplier-row {
   display: flex;
   align-items: flex-end;

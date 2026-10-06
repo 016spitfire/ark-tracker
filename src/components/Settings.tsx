@@ -2,7 +2,23 @@ import { useState, type ChangeEvent } from 'react'
 import { DECAY_MATERIALS } from '../data/decay'
 import { migrate } from '../hooks/useAppData'
 import type { AppData, AppSettings, ArkMap, Category } from '../types'
+import {
+  getNotificationStatus,
+  requestNotificationPermission,
+  showNotification,
+} from '../utils/notifications'
 import NumberInput from './NumberInput'
+
+const LEAD_OPTIONS = [
+  { minutes: 0, label: 'When ready' },
+  { minutes: 15, label: '15 minutes before' },
+  { minutes: 30, label: '30 minutes before' },
+  { minutes: 60, label: '1 hour before' },
+  { minutes: 120, label: '2 hours before' },
+  { minutes: 360, label: '6 hours before' },
+  { minutes: 720, label: '12 hours before' },
+  { minutes: 1440, label: '1 day before' },
+]
 
 type Props = {
   data: AppData
@@ -24,6 +40,17 @@ export default function Settings({
   onReplaceAll,
 }: Props) {
   const [newMapName, setNewMapName] = useState('')
+  // Read live: permission can change in browser settings, and isn't part of the saved data
+  const [notificationStatus, setNotificationStatus] = useState(getNotificationStatus)
+  const notificationsOn = data.settings.notificationsEnabled && notificationStatus === 'granted'
+
+  async function toggleNotifications(enabled: boolean) {
+    if (!enabled) return onSaveSettings({ notificationsEnabled: false })
+    const status = await requestNotificationPermission()
+    setNotificationStatus(status)
+    onSaveSettings({ notificationsEnabled: status === 'granted' })
+  }
+
   const [structureMultiplier, setStructureMultiplier] = useState(1)
   const [tameMultiplier, setTameMultiplier] = useState(1)
 
@@ -164,6 +191,67 @@ export default function Settings({
           />
           <button onClick={addCategory}>Add</button>
         </div>
+      </section>
+
+      <section>
+        <h2>Notifications</h2>
+        {notificationStatus === 'unsupported' && (
+          <p className="hint">This browser doesn't support notifications.</p>
+        )}
+        {notificationStatus === 'needs-install' && (
+          <p className="hint">
+            On iPhone and iPad, notifications only work from the Home Screen app. In Safari, tap
+            Share, then Add to Home Screen, and open ARK Tracker from there.
+          </p>
+        )}
+        {notificationStatus === 'denied' && (
+          <p className="hint">
+            Notifications are blocked for this site. Allow them in your browser's site settings,
+            then reload.
+          </p>
+        )}
+        {(notificationStatus === 'default' || notificationStatus === 'granted') && (
+          <>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={notificationsOn}
+                onChange={e => toggleNotifications(e.target.checked)}
+              />
+              Notify me about timers
+            </label>
+            {notificationsOn && (
+              <div className="notification-options">
+                <label>
+                  Notify
+                  <select
+                    value={data.settings.notifyLeadMinutes}
+                    onChange={e => onSaveSettings({ notifyLeadMinutes: Number(e.target.value) })}
+                  >
+                    {LEAD_OPTIONS.map(o => (
+                      <option key={o.minutes} value={o.minutes}>{o.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  onClick={() =>
+                    showNotification('ARK Tracker', {
+                      body: 'Notifications are working. Timer alerts will look like this.',
+                      tag: 'test',
+                      data: { url: '/settings' },
+                    })
+                  }
+                >
+                  Send test
+                </button>
+              </div>
+            )}
+            <p className="hint">
+              For now, notifications only arrive while ARK Tracker is open (a tab, or the app in the
+              background). Alerts with the app fully closed are coming later.
+            </p>
+          </>
+        )}
       </section>
 
       <section>
