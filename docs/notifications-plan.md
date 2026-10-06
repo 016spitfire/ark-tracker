@@ -56,7 +56,7 @@ Ruled out:
 - [x] Multiple alerts per timer (checkboxes: 1 day, 12h, 6h, 2h, 1h, 30m, 15m, when ready)
 - [x] Daily summary at a local time: count of timers ready in the next 24 hours, soonest named
 - [x] New or resynced timers only alert going forward (no instant "1 hour before" on a 10-minute timer)
-- [ ] README updated
+- [x] README updated
 
 ### Milestone 2: Calendar export (optional)
 
@@ -111,6 +111,7 @@ Ruled out:
 - 2026-10-05: ARK Tracker stays free. No donations or paywall in the app; a credit link to the portfolio only (fan content guidelines)
 - 2026-10-06: Plan written; work happens on `feature/notifications`
 - 2026-10-06: Multiple alerts per timer (user picks any of 8 lead times) plus an optional daily summary at a local time. Daily summary is skipped when nothing is due.
+- 2026-10-06: Milestone 1 complete and tested on the branch preview (PC and Android; iPad install message confirmed).
 
 ## References
 
