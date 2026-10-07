@@ -116,7 +116,7 @@ export function checkNotifications(
   for (const alert of alerts) seen[alert.timerKey] = previous.seen[alert.timerKey] ?? now
 
   // Due now and not yet handled. Skips alerts from before the countdown was seen.
-  const due = alerts.filter(a => a.fireAt <= now && !sent.has(a.key) && a.fireAt >= seen[a.timerKey])
+  const due = alerts.filter(a => a.fireAt <= now && !sent.has(a.key) && a.fireAt > seen[a.timerKey])
   for (const alert of due) sent.add(alert.key)
 
   // Per timer, only the latest due alert matters ("15 min" supersedes "1 hour")

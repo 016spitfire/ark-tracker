@@ -3,7 +3,7 @@ import type { ArkMap, Category, Marker, MarkerStatus, Timer, TimerGroup } from '
 import { readingMs, resolveGroup, type GroupDraft } from '../utils/decay'
 import { defaultGroupName } from '../utils/groups'
 import { durationToMs, formatRemaining, toWholeNumber } from '../utils/time'
-import { sortTimers, TIMER_LABEL_SUGGESTIONS } from '../utils/timers'
+import { DEMOLISHABLE_LABEL, demolishableTimer, sortTimers, TIMER_LABEL_SUGGESTIONS } from '../utils/timers'
 import GroupEditor from './GroupEditor'
 import TimerDisclaimer from './TimerDisclaimer'
 
@@ -113,7 +113,11 @@ export default function MarkerForm({
       : [newGroupDraft('G1', categoryId)],
   )
   // One-off timers: anything not in a group, soonest first
+  // Reported as already demolishable: no timers to enter, just "ready since" now
+  const existingDemolishable = demolishableTimer(marker)
+  const [demolishable, setDemolishable] = useState(!!existingDemolishable)
   const [drafts, setDrafts] = useState<TimerDraft[]>(() => {
+    if (existingDemolishable) return []
     const groupIds = new Set(marker?.groups.map(g => g.id))
     return sortTimers(marker?.timers.filter(t => !t.groupId || !groupIds.has(t.groupId)) ?? []).map(toDraft)
   })
@@ -167,7 +171,13 @@ export default function MarkerForm({
     // back by mistake doesn't lose them.
     let timers = marker?.timers ?? []
     let groups = marker?.groups ?? []
-    if (hasTimer) {
+    if (hasTimer && demolishable) {
+      // Keeps the original report time when editing, so "ready since" doesn't reset
+      timers = [
+        existingDemolishable ?? { id: crypto.randomUUID(), label: DEMOLISHABLE_LABEL, expiresAt: now, status: 'active' },
+      ]
+      groups = []
+    } else if (hasTimer) {
       timers = []
       groups = []
       for (const draft of groupDrafts) {
@@ -279,84 +289,97 @@ export default function MarkerForm({
       {hasTimer && (
         <fieldset>
           <legend>Timers</legend>
-          {groupDrafts.map(draft => (
-            <GroupEditor
-              key={draft.id}
-              draft={draft}
-              decayDays={decayDays}
-              onChange={next => setGroupDrafts(gs => gs.map(g => (g.id === next.id ? next : g)))}
-              onRemove={() => setGroupDrafts(gs => gs.filter(g => g.id !== draft.id))}
-            />
-          ))}
-          <button type="button" onClick={addGroup}>
-            {groupDrafts.length > 0 ? '+ Add another base group' : '+ Add base group'}
-          </button>
+          <label className="checkbox">
+            <input type="checkbox" checked={demolishable} onChange={e => setDemolishable(e.target.checked)} />
+            Already demolishable
+          </label>
+          {demolishable ? (
+            <p className="hint">
+              Saved as ready{existingDemolishable ? '' : ' from now'}, with no timers, so it's recorded with
+              the date and time you reported it. Uncheck to enter timers instead.
+            </p>
+          ) : (
+            <>
+              {groupDrafts.map(draft => (
+                <GroupEditor
+                  key={draft.id}
+                  draft={draft}
+                  decayDays={decayDays}
+                  onChange={next => setGroupDrafts(gs => gs.map(g => (g.id === next.id ? next : g)))}
+                  onRemove={() => setGroupDrafts(gs => gs.filter(g => g.id !== draft.id))}
+                />
+              ))}
+              <button type="button" onClick={addGroup}>
+                {groupDrafts.length > 0 ? '+ Add another base group' : '+ Add base group'}
+              </button>
 
-          <h3 className="timers-subhead">Other timers</h3>
-          <p className="hint">
-            For timers that don't follow a base group, like tames left on their own. Leave the time
-            blank on an existing timer to keep it, or enter a new one to restart from now.
-          </p>
-          <datalist id="timer-labels">
-            {TIMER_LABEL_SUGGESTIONS.map(label => (
-              <option key={label} value={label} />
-            ))}
-          </datalist>
-          <ul className="timer-drafts">
-            {drafts.map(draft => (
-              <li key={draft.id}>
-                <div className="add-row">
-                  <input
-                    value={draft.label}
-                    onChange={e => updateDraft(draft.id, { label: e.target.value })}
-                    list="timer-labels"
-                    placeholder="Label, e.g. Tames, Metal"
-                  />
-                  <button
-                    type="button"
-                    className="danger"
-                    onClick={() => setDrafts(ds => ds.filter(d => d.id !== draft.id))}
-                  >
-                    Remove
-                  </button>
-                </div>
-                {draft.expiresAt !== undefined && (
-                  <div className="draft-status">
-                    <span className="hint">
-                      {draft.expiresAt > Date.now()
-                        ? `Ready in ${formatRemaining(draft.expiresAt - Date.now())}`
-                        : 'Ready'}
-                    </span>
-                    <label className="checkbox">
+              <h3 className="timers-subhead">Other timers</h3>
+              <p className="hint">
+                For timers that don't follow a base group, like tames left on their own. Leave the time
+                blank on an existing timer to keep it, or enter a new one to restart from now.
+              </p>
+              <datalist id="timer-labels">
+                {TIMER_LABEL_SUGGESTIONS.map(label => (
+                  <option key={label} value={label} />
+                ))}
+              </datalist>
+              <ul className="timer-drafts">
+                {drafts.map(draft => (
+                  <li key={draft.id}>
+                    <div className="add-row">
                       <input
-                        type="checkbox"
-                        checked={draft.status === 'done'}
-                        onChange={e => updateDraft(draft.id, { status: e.target.checked ? 'done' : 'active' })}
+                        value={draft.label}
+                        onChange={e => updateDraft(draft.id, { label: e.target.value })}
+                        list="timer-labels"
+                        placeholder="Label, e.g. Tames, Metal"
                       />
-                      Done
-                    </label>
-                  </div>
-                )}
-                <div className="row">
-                  <label>
-                    Days
-                    <input inputMode="numeric" value={draft.days} onChange={e => updateDraft(draft.id, { days: e.target.value })} placeholder="0" />
-                  </label>
-                  <label>
-                    Hours
-                    <input inputMode="numeric" value={draft.hours} onChange={e => updateDraft(draft.id, { hours: e.target.value })} placeholder="0" />
-                  </label>
-                  <label>
-                    Minutes
-                    <input inputMode="numeric" value={draft.minutes} onChange={e => updateDraft(draft.id, { minutes: e.target.value })} placeholder="0" />
-                  </label>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <button type="button" onClick={() => setDrafts(ds => [...ds, newDraft()])}>
-            + Add another timer
-          </button>
+                      <button
+                        type="button"
+                        className="danger"
+                        onClick={() => setDrafts(ds => ds.filter(d => d.id !== draft.id))}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    {draft.expiresAt !== undefined && (
+                      <div className="draft-status">
+                        <span className="hint">
+                          {draft.expiresAt > Date.now()
+                            ? `Ready in ${formatRemaining(draft.expiresAt - Date.now())}`
+                            : 'Ready'}
+                        </span>
+                        <label className="checkbox">
+                          <input
+                            type="checkbox"
+                            checked={draft.status === 'done'}
+                            onChange={e => updateDraft(draft.id, { status: e.target.checked ? 'done' : 'active' })}
+                          />
+                          Done
+                        </label>
+                      </div>
+                    )}
+                    <div className="row">
+                      <label>
+                        Days
+                        <input inputMode="numeric" value={draft.days} onChange={e => updateDraft(draft.id, { days: e.target.value })} placeholder="0" />
+                      </label>
+                      <label>
+                        Hours
+                        <input inputMode="numeric" value={draft.hours} onChange={e => updateDraft(draft.id, { hours: e.target.value })} placeholder="0" />
+                      </label>
+                      <label>
+                        Minutes
+                        <input inputMode="numeric" value={draft.minutes} onChange={e => updateDraft(draft.id, { minutes: e.target.value })} placeholder="0" />
+                      </label>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <button type="button" onClick={() => setDrafts(ds => [...ds, newDraft()])}>
+                + Add another timer
+              </button>
+            </>
+          )}
         </fieldset>
       )}
 
