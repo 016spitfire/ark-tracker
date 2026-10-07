@@ -70,7 +70,10 @@ function collectAlerts(data: AppData): Alert[] {
 
 function describe(alert: Alert, now: number): string {
   const remaining = alert.timer.expiresAt - now
-  const label = timerLabel(alert.timer)
+  // Name the group when a marker has several, so two bases' alerts can be told apart
+  const group =
+    alert.marker.groups.length > 1 ? alert.marker.groups.find(g => g.id === alert.timer.groupId) : undefined
+  const label = group ? `${group.name} ${timerLabel(alert.timer)}` : timerLabel(alert.timer)
   return remaining > 0 ? `${label} ready in ${formatRemaining(remaining)}` : `${label} is ready`
 }
 

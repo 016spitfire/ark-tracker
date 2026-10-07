@@ -27,12 +27,13 @@ npm run build     # type-check + production build
 | `src/hooks/useNow.ts` | Ticking clock that keeps countdowns live |
 | `src/utils/time.ts` | Duration math and formatting |
 | `src/utils/timers.ts` | Timer helpers: sorting, nearest timer, label suggestions |
-| `src/utils/decay.ts` | Calculates a base's timers from one material's reading |
+| `src/utils/decay.ts` | Calculates a decay group's timers from one material's reading |
+| `src/utils/groups.ts` | Group helpers: offline moment, default names, shifting, v2 -> v3 grouping |
 | `src/components/MarkerList.tsx` | Main screen: filters, Timers section, Points of Interest section |
 | `src/components/MarkerForm.tsx` | Add/edit a marker |
 | `src/components/Settings.tsx` | Edit maps and categories, export/import JSON |
 | `src/components/ResyncForm.tsx` | Inline "time the game shows now" entry on timer cards |
-| `src/components/DecayCalculator.tsx` | "Fill from decay times" panel on the marker form |
+| `src/components/GroupEditor.tsx` | One decay group on the marker form: reading, materials, live preview |
 | `src/components/NumberInput.tsx` | Decimal input used in Settings |
 | `src/components/TimerDisclaimer.tsx` | Note about server downtime and rollbacks |
 | `vercel.json` | Sends every URL to `index.html` so routes work on refresh and direct links |
@@ -51,11 +52,11 @@ Any other URL redirects to `/`.
 ## How the data works
 
 - Everything is saved as one JSON object under the localStorage key `ark-tracker:data`.
-- The data has a `version` number. When the shape changes, `migrate()` in `src/hooks/useAppData.ts` upgrades older saves and older export files as they load, one version at a time. Version 2 replaced a marker's single `expiresAt` with a `timers` list.
+- The data has a `version` number. When the shape changes, `migrate()` in `src/hooks/useAppData.ts` upgrades older saves and older export files as they load, one version at a time. Version 2 replaced a marker's single `expiresAt` with a `timers` list. Version 3 added decay groups (see below).
 - Each timer stores `expiresAt` as an absolute timestamp (entry time + duration), so countdowns stay accurate while the app is closed.
-- Timer markers sort by their nearest active timer. Cards with more than one timer list each one; tap a timer row to resync it or mark it done. Done timers follow the "Show done" toggle, the same as done markers.
-- In the edit form, add timers with **+ Add timer**. On existing timers, leave the duration blank to keep it, or enter a new one to restart it from now.
-- **Resync** restarts a timer's countdown from now, using the time the game currently shows. Use it when the in-game timer has drifted. The game's timers pause during server downtime and rewind on crash rollbacks, and the app can't detect either. A disclaimer about this appears on the main list and on the form for timer categories.
+- Timer markers sort by their nearest active timer. Cards with more than one timer list each one, under group headings when there's more than one group (one-off timers appear under "Other"); tap a timer row to resync it or mark it done. Done timers follow the "Show done" toggle, the same as done markers.
+- In the edit form, decay groups come first, then **Other timers** for one-offs (**+ Add another timer**). On existing one-off timers, leave the duration blank to keep it, or enter a new one to restart it from now.
+- **Resync** restarts a timer's countdown from now, using the time the game currently shows. Resyncing a timer in a decay group shifts every timer in that group by the same amount. Use it when the in-game timer has drifted. The game's timers pause during server downtime and rewind on crash rollbacks, and the app can't detect either. A disclaimer about this appears on the main list and on the form for timer categories.
 - **Done** marks a marker as handled (looted, claimed, checked) without deleting it. Use "Show done" to see those markers again.
 - Categories control whether a marker has a timer. You can add, recolor, or toggle them in Settings.
 - Maps and categories that are still used by markers can't be deleted.
@@ -70,7 +71,13 @@ time gone       = full time (material you read) - time left (material you read)
 time left (any) = full time (that material) - time gone
 ```
 
-On the marker form, **Fill from decay times** asks for one material's in-game timer and which other materials the base has, then adds a timer for each. A timer whose name already exists on the marker is updated instead of duplicated. Materials that would already have decayed are skipped and listed.
+Timers are organized into **decay groups**: one group per base, holding that base's material timers. A new marker opens with group **G1** ready for a reading: pick the material you read (Metal by default for Abandoned Base, Tames for Neglected Tame), enter its time, and check the other materials at the base. The form previews every resulting timer live, and Save creates them. Materials that would already have decayed are skipped and listed.
+
+- **+ Add another base group** adds G2, G3, and so on, for close bases with different countdowns at one marker. Group names are editable.
+- On an existing group, a new reading recalculates the whole group; leaving it blank keeps the current times. Checking a material adds it using the group's current offline moment, with no new reading needed. Unchecking removes it.
+- Changing decay settings later doesn't move existing timers. A new reading recalculates with the current settings.
+- **Other timers** are one-offs that don't follow a base, like tames left on their own.
+- Upgrading to data version 3 turned each marker's material-named timers into group G1 with their times unchanged. A tame timer joined G1 only if its countdown lined up with the base's offline moment (within an hour); otherwise it stayed a one-off.
 
 Full times come from **Settings > Decay Times**. The defaults are official-server values from the [ARK wiki](https://ark.wiki.gg/wiki/Building). Private servers often scale decay, with separate multipliers for structures and tames. Enter them and press **Apply** to recalculate every row, then fix any single row that still doesn't match the game. To work out a server's structure multiplier, read two materials at one base: for example, `(metal time left - stone time left) / 4 days`, since official metal and stone are 4 days apart.
 

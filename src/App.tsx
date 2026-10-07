@@ -61,7 +61,7 @@ export default function App() {
                 onEdit={id => navigate(`/markers/${id}/edit`)}
                 onToggleDone={m => store.setMarkerStatus(m.id, m.status === 'done' ? 'active' : 'done')}
                 onResyncTimer={(markerId, timerId, durationMs) =>
-                  store.updateTimer(markerId, timerId, { expiresAt: Date.now() + durationMs })
+                  store.resyncTimer(markerId, timerId, Date.now() + durationMs)
                 }
                 onSetTimerStatus={(markerId, timerId, status) =>
                   store.updateTimer(markerId, timerId, { status })

@@ -12,7 +12,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 // Starting data for a fresh install. Everything here is editable in Settings.
 export const DEFAULT_DATA: AppData = {
-  version: 2,
+  version: 3,
   maps: [
     { id: 'the-island', name: 'The Island' },
     { id: 'scorched-earth', name: 'Scorched Earth' },

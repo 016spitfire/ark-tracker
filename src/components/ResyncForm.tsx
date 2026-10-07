@@ -4,12 +4,14 @@ import { durationToMs, toWholeNumber } from '../utils/time'
 type Props = {
   onSave: (durationMs: number) => void
   onCancel: () => void
+  // Replaces the default instruction, e.g. to say the whole group moves
+  note?: string
   // Extra buttons shown after Resync and Cancel
   children?: ReactNode
 }
 
 // Inline "the game says X is left" entry on a timer card. Restarts the countdown from now.
-export default function ResyncForm({ onSave, onCancel, children }: Props) {
+export default function ResyncForm({ onSave, onCancel, note, children }: Props) {
   const [days, setDays] = useState('')
   const [hours, setHours] = useState('')
   const [minutes, setMinutes] = useState('')
@@ -23,7 +25,7 @@ export default function ResyncForm({ onSave, onCancel, children }: Props) {
 
   return (
     <form className="resync-form" onSubmit={handleSubmit}>
-      <p className="hint">Enter the time the game shows now.</p>
+      <p className="hint">{note ?? 'Enter the time the game shows now.'}</p>
       <div className="row">
         <label>
           Days

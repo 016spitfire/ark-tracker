@@ -19,6 +19,17 @@ export type Timer = {
   // Absolute timestamp, so the countdown stays correct while the app is closed
   expiresAt: number
   status: MarkerStatus
+  // Set for timers in a decay group. Ungrouped timers are one-offs.
+  groupId?: string
+  // Decay material (see src/data/decay.ts). Set for grouped timers.
+  materialId?: string
+}
+
+// One base's decay timers. They all started when its tribe went offline, so resyncing
+// any one of them shifts the whole group.
+export type TimerGroup = {
+  id: string
+  name: string
 }
 
 export type Marker = {
@@ -32,6 +43,7 @@ export type Marker = {
   createdAt: number
   // Empty for categories without timers
   timers: Timer[]
+  groups: TimerGroup[]
   status: MarkerStatus
 }
 
@@ -52,7 +64,7 @@ export type AppSettings = {
 // Everything the app saves, stored as one object in localStorage.
 // `version` lets us migrate old saves if the shape changes later.
 export type AppData = {
-  version: 2
+  version: 3
   maps: ArkMap[]
   categories: Category[]
   markers: Marker[]

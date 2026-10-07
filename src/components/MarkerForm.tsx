@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react'
-import type { ArkMap, Category, Marker, MarkerStatus, Timer } from '../types'
-import type { CalculatedTimer } from '../utils/decay'
-import { durationToMs, formatRemaining, splitDuration, toWholeNumber } from '../utils/time'
+import type { ArkMap, Category, Marker, MarkerStatus, Timer, TimerGroup } from '../types'
+import { readingMs, resolveGroup, type GroupDraft } from '../utils/decay'
+import { defaultGroupName } from '../utils/groups'
+import { durationToMs, formatRemaining, toWholeNumber } from '../utils/time'
 import { sortTimers, TIMER_LABEL_SUGGESTIONS } from '../utils/timers'
-import DecayCalculator from './DecayCalculator'
+import GroupEditor from './GroupEditor'
 import TimerDisclaimer from './TimerDisclaimer'
 
 type Props = {
@@ -21,7 +22,41 @@ type Props = {
   onCancel: () => void
 }
 
-// A timer as it's being edited. Duration fields are strings straight from the inputs.
+// The material most likely to be read first, by category. Anything else defaults to Metal.
+const DEFAULT_READ_MATERIAL: Record<string, string> = {
+  'abandoned-base': 'metal',
+  'neglected-tame': 'tames',
+}
+const defaultReadMaterial = (categoryId: string) => DEFAULT_READ_MATERIAL[categoryId] ?? 'metal'
+
+function newGroupDraft(name: string, categoryId: string): GroupDraft {
+  return {
+    id: crypto.randomUUID(),
+    name,
+    readMaterialId: defaultReadMaterial(categoryId),
+    days: '',
+    hours: '',
+    minutes: '',
+    materialIds: [],
+    existing: [],
+    statuses: {},
+  }
+}
+
+function groupToDraft(group: TimerGroup, timers: Timer[], categoryId: string): GroupDraft {
+  const existing = sortTimers(timers.filter(t => t.groupId === group.id))
+  const materialIds = existing.map(t => t.materialId).filter((id): id is string => !!id)
+  const preferred = defaultReadMaterial(categoryId)
+  return {
+    ...newGroupDraft(group.name, categoryId),
+    id: group.id,
+    readMaterialId: materialIds.includes(preferred) ? preferred : (materialIds[0] ?? preferred),
+    materialIds,
+    existing,
+  }
+}
+
+// A one-off timer as it's being edited. Duration fields are strings straight from the inputs.
 type TimerDraft = {
   id: string
   label: string
@@ -71,10 +106,17 @@ export default function MarkerForm({
   const [description, setDescription] = useState(marker?.description ?? '')
   const [lat, setLat] = useState(marker ? String(marker.lat) : '')
   const [lon, setLon] = useState(marker ? String(marker.lon) : '')
-  // Existing timers, soonest first. A new marker starts with one blank timer to fill in.
-  const [drafts, setDrafts] = useState<TimerDraft[]>(() =>
-    marker?.timers.length ? sortTimers(marker.timers).map(toDraft) : [newDraft()],
+  // Decay groups. A new marker starts with one open group, ready for a reading.
+  const [groupDrafts, setGroupDrafts] = useState<GroupDraft[]>(() =>
+    marker
+      ? marker.groups.map(g => groupToDraft(g, marker.timers, marker.categoryId))
+      : [newGroupDraft('G1', categoryId)],
   )
+  // One-off timers: anything not in a group, soonest first
+  const [drafts, setDrafts] = useState<TimerDraft[]>(() => {
+    const groupIds = new Set(marker?.groups.map(g => g.id))
+    return sortTimers(marker?.timers.filter(t => !t.groupId || !groupIds.has(t.groupId)) ?? []).map(toDraft)
+  })
   const [error, setError] = useState('')
 
   const category = categories.find(c => c.id === categoryId)
@@ -95,22 +137,19 @@ export default function MarkerForm({
   const updateDraft = (id: string, changes: Partial<TimerDraft>) =>
     setDrafts(ds => ds.map(d => (d.id === id ? { ...d, ...changes } : d)))
 
-  // Calculated timers update a same-named timer if there is one, otherwise get added.
-  // Untouched blank rows are dropped so they don't sit above the new ones.
-  function addCalculated(timers: CalculatedTimer[]) {
-    setDrafts(ds => {
-      let next = ds.filter(d => d.label.trim() || d.expiresAt !== undefined || draftDurationMs(d) > 0)
-      for (const { label, remainingMs } of timers) {
-        const { days, hours, minutes } = splitDuration(remainingMs)
-        const fields = { days: String(days), hours: String(hours), minutes: String(minutes) }
-        const match = next.find(d => d.label.trim().toLowerCase() === label.toLowerCase())
-        next = match
-          ? next.map(d => (d === match ? { ...d, ...fields } : d))
-          : [...next, { ...newDraft(), label, ...fields }]
-      }
-      return next
-    })
+  // Untouched new groups follow the category's default material (Metal for bases, Tames
+  // for neglected tames)
+  function changeCategory(id: string) {
+    setCategoryId(id)
+    setGroupDrafts(gs =>
+      gs.map(g =>
+        g.existing.length === 0 && readingMs(g) === 0 ? { ...g, readMaterialId: defaultReadMaterial(id) } : g,
+      ),
+    )
   }
+
+  const addGroup = () =>
+    setGroupDrafts(gs => [...gs, newGroupDraft(defaultGroupName(gs), categoryId)])
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -127,8 +166,27 @@ export default function MarkerForm({
     // Switching to a category without timers keeps the old ones (hidden), so switching
     // back by mistake doesn't lose them.
     let timers = marker?.timers ?? []
+    let groups = marker?.groups ?? []
     if (hasTimer) {
       timers = []
+      groups = []
+      for (const draft of groupDrafts) {
+        const result = resolveGroup(draft, decayDays, now)
+        if (!result.ok) return setError(result.error)
+        // An untouched group, or one whose materials have all decayed, isn't saved
+        if (result.members.length === 0) continue
+        groups.push({ id: draft.id, name: draft.name.trim() || defaultGroupName(groups) })
+        for (const member of result.members) {
+          timers.push({
+            id: member.timerId ?? crypto.randomUUID(),
+            label: member.label,
+            expiresAt: member.expiresAt,
+            status: member.status,
+            groupId: draft.id,
+            materialId: member.materialId,
+          })
+        }
+      }
       for (const draft of drafts) {
         const durationMs = draftDurationMs(draft)
         const label = draft.label.trim()
@@ -153,6 +211,7 @@ export default function MarkerForm({
       lon: lonNum,
       createdAt: marker?.createdAt ?? now,
       timers,
+      groups,
       status: marker?.status ?? 'active',
     })
   }
@@ -173,7 +232,7 @@ export default function MarkerForm({
 
       <label>
         Category
-        <select value={categoryId} onChange={e => setCategoryId(e.target.value)}>
+        <select value={categoryId} onChange={e => changeCategory(e.target.value)}>
           {categories.map(c => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
@@ -220,9 +279,23 @@ export default function MarkerForm({
       {hasTimer && (
         <fieldset>
           <legend>Timers</legend>
+          {groupDrafts.map(draft => (
+            <GroupEditor
+              key={draft.id}
+              draft={draft}
+              decayDays={decayDays}
+              onChange={next => setGroupDrafts(gs => gs.map(g => (g.id === next.id ? next : g)))}
+              onRemove={() => setGroupDrafts(gs => gs.filter(g => g.id !== draft.id))}
+            />
+          ))}
+          <button type="button" onClick={addGroup}>
+            {groupDrafts.length > 0 ? '+ Add another base group' : '+ Add base group'}
+          </button>
+
+          <h3 className="timers-subhead">Other timers</h3>
           <p className="hint">
-            Enter the time the game shows. On existing timers, leave the time blank to keep it, or
-            enter a new one to restart from now.
+            For timers that don't follow a base group, like tames left on their own. Leave the time
+            blank on an existing timer to keep it, or enter a new one to restart from now.
           </p>
           <datalist id="timer-labels">
             {TIMER_LABEL_SUGGESTIONS.map(label => (
@@ -281,12 +354,9 @@ export default function MarkerForm({
               </li>
             ))}
           </ul>
-          <div className="timer-buttons">
-            <button type="button" onClick={() => setDrafts(ds => [...ds, newDraft()])}>
-              + Add timer
-            </button>
-            <DecayCalculator decayDays={decayDays} onAdd={addCalculated} />
-          </div>
+          <button type="button" onClick={() => setDrafts(ds => [...ds, newDraft()])}>
+            + Add another timer
+          </button>
         </fieldset>
       )}
 

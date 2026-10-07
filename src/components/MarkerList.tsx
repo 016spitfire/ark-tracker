@@ -49,7 +49,8 @@ export default function MarkerList({
     query === '' ||
     m.name.toLowerCase().includes(query) ||
     m.description.toLowerCase().includes(query) ||
-    m.timers.some(t => t.label.toLowerCase().includes(query))
+    m.timers.some(t => t.label.toLowerCase().includes(query)) ||
+    m.groups.some(g => g.name.toLowerCase().includes(query))
 
   const visible = markers.filter(
     m =>
@@ -78,8 +79,14 @@ export default function MarkerList({
 
   // Resync row for one timer, with a done/reopen toggle when the card has several timers
   function renderTimerPanel(marker: Marker, timer: Timer, withDoneToggle: boolean) {
+    const group = marker.groups.find(g => g.id === timer.groupId)
     return (
       <ResyncForm
+        note={
+          group
+            ? `Enter the time the game shows now. Every timer in ${group.name} moves with it.`
+            : undefined
+        }
         onSave={durationMs => {
           onResyncTimer(marker.id, timer.id, durationMs)
           setOpenTimerId(null)
@@ -116,6 +123,21 @@ export default function MarkerList({
     )
     // A single active timer keeps the simple card. Anything more gets a row per timer.
     const showTimerRows = timed && (shownTimers.length > 1 || shownTimers.some(t => t.status === 'done'))
+    // Each group gets its own section, then one-offs under "Other". Headers only show when
+    // there's more than one section.
+    const groupIds = new Set(marker.groups.map(g => g.id))
+    const timerSections = [
+      ...marker.groups.map(g => ({
+        key: g.id,
+        name: g.name,
+        timers: shownTimers.filter(t => t.groupId === g.id),
+      })),
+      {
+        key: 'other',
+        name: 'Other',
+        timers: shownTimers.filter(t => !t.groupId || !groupIds.has(t.groupId)),
+      },
+    ].filter(section => section.timers.length > 0)
     const openTimer = marker.timers.find(t => t.id === openTimerId)
 
     return (
@@ -159,27 +181,34 @@ export default function MarkerList({
         </div>
 
         {showTimerRows && (
-          <ul className="timer-rows">
-            {shownTimers.map(timer => {
-              const timerRemaining = timer.expiresAt - now
-              const timerReady = timer.status === 'active' && timerRemaining <= 0
-              return (
-                <li key={timer.id}>
-                  <button
-                    className={`timer-row${timer.status === 'done' ? ' done' : ''}${timerReady ? ' ready' : ''}`}
-                    disabled={!editable}
-                    onClick={() => setOpenTimerId(openTimerId === timer.id ? null : timer.id)}
-                  >
-                    <span>{timerLabel(timer)}</span>
-                    <span className="timer">
-                      {timer.status === 'done' ? 'done' : timerReady ? 'READY' : formatRemaining(timerRemaining)}
-                    </span>
-                  </button>
-                  {editable && openTimerId === timer.id && renderTimerPanel(marker, timer, true)}
-                </li>
-              )
-            })}
-          </ul>
+          <div className="timer-rows">
+            {timerSections.map(section => (
+              <div key={section.key}>
+                {timerSections.length > 1 && <div className="timer-section-name">{section.name}</div>}
+                <ul>
+                  {section.timers.map(timer => {
+                    const timerRemaining = timer.expiresAt - now
+                    const timerReady = timer.status === 'active' && timerRemaining <= 0
+                    return (
+                      <li key={timer.id}>
+                        <button
+                          className={`timer-row${timer.status === 'done' ? ' done' : ''}${timerReady ? ' ready' : ''}`}
+                          disabled={!editable}
+                          onClick={() => setOpenTimerId(openTimerId === timer.id ? null : timer.id)}
+                        >
+                          <span>{timerLabel(timer)}</span>
+                          <span className="timer">
+                            {timer.status === 'done' ? 'done' : timerReady ? 'READY' : formatRemaining(timerRemaining)}
+                          </span>
+                        </button>
+                        {editable && openTimerId === timer.id && renderTimerPanel(marker, timer, true)}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
         )}
 
         {editable && !showTimerRows && openTimer && renderTimerPanel(marker, openTimer, false)}

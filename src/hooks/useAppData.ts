@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { DEFAULT_DATA, DEFAULT_SETTINGS } from '../data/defaults'
 import type { AppData, AppSettings, ArkMap, Category, Marker, MarkerStatus, Timer } from '../types'
+import { groupExistingTimers, shiftGroup } from '../utils/groups'
 
 const STORAGE_KEY = 'ark-tracker:data'
 
 // Version 1 markers had a single optional timer
-type MarkerV1 = Omit<Marker, 'timers'> & { expiresAt?: number }
+type MarkerV1 = Omit<Marker, 'timers' | 'groups'> & { expiresAt?: number }
+// Version 2 markers had timers but no groups
+type MarkerV2 = Omit<Marker, 'groups'>
 
 // Upgrades a save (or an imported export) from any older version to the current shape.
 // Each step handles one version bump, so a v1 save runs every step in order.
@@ -15,6 +18,20 @@ export function migrate(value: unknown): AppData | null {
   const data = value as Record<string, unknown>
   if (!Array.isArray(data.maps) || !Array.isArray(data.categories) || !Array.isArray(data.markers)) {
     return null
+  }
+
+  // New settings get their defaults without a version bump, since nothing old changes shape.
+  // Prepared first because the v2 -> v3 step needs the decay times.
+  const saved = data.settings as Partial<AppSettings> | undefined
+  const settings: AppSettings = {
+    ...DEFAULT_SETTINGS,
+    ...saved,
+    // Merged one level deeper, so materials added in later versions get their defaults too
+    decayDays: { ...DEFAULT_SETTINGS.decayDays, ...saved?.decayDays },
+    // Briefly a single number during development; anything that isn't a list gets the default
+    notifyLeadMinutes: Array.isArray(saved?.notifyLeadMinutes)
+      ? saved.notifyLeadMinutes
+      : DEFAULT_SETTINGS.notifyLeadMinutes,
   }
 
   let version = typeof data.version === 'number' ? data.version : 1
@@ -32,20 +49,16 @@ export function migrate(value: unknown): AppData | null {
     version = 2
   }
 
-  // New settings get their defaults without a version bump, since nothing old changes shape
-  const saved = data.settings as Partial<AppSettings> | undefined
-  const settings: AppSettings = {
-    ...DEFAULT_SETTINGS,
-    ...saved,
-    // Merged one level deeper, so materials added in later versions get their defaults too
-    decayDays: { ...DEFAULT_SETTINGS.decayDays, ...saved?.decayDays },
-    // Briefly a single number during development; anything that isn't a list gets the default
-    notifyLeadMinutes: Array.isArray(saved?.notifyLeadMinutes)
-      ? saved.notifyLeadMinutes
-      : DEFAULT_SETTINGS.notifyLeadMinutes,
+  // v2 -> v3: decay groups. Each marker's material timers become group G1.
+  if (version === 2) {
+    markers = (markers as MarkerV2[]).map(marker => ({
+      ...marker,
+      ...groupExistingTimers(marker, settings.decayDays),
+    }))
+    version = 3
   }
 
-  return { ...(data as AppData), version: 2, markers: markers as Marker[], settings }
+  return { ...(data as AppData), version: 3, markers: markers as Marker[], settings }
 }
 
 function load(): AppData {
@@ -87,6 +100,21 @@ export function useAppData() {
       setData(d => ({
         ...d,
         markers: d.markers.map(m => (m.id === id ? { ...m, status } : m)),
+      })),
+    // Sets a timer to the time the game shows. A grouped timer moves its whole group.
+    resyncTimer: (markerId: string, timerId: string, expiresAt: number) =>
+      setData(d => ({
+        ...d,
+        markers: d.markers.map(m => {
+          const timer = m.id === markerId ? m.timers.find(t => t.id === timerId) : undefined
+          if (!timer) return m
+          return {
+            ...m,
+            timers: timer.groupId
+              ? shiftGroup(m.timers, timer.groupId, expiresAt - timer.expiresAt)
+              : m.timers.map(t => (t.id === timerId ? { ...t, expiresAt } : t)),
+          }
+        }),
       })),
     updateTimer: (markerId: string, timerId: string, changes: Partial<Timer>) =>
       setData(d => ({
