@@ -26,6 +26,10 @@ npm run build     # type-check + production build
 | `src/hooks/useAppData.ts` | Loads/saves `AppData` in localStorage, exposes save/delete actions |
 | `src/hooks/useNow.ts` | Ticking clock that keeps countdowns live |
 | `src/utils/time.ts` | Duration math and formatting |
+| `src/utils/filters.ts` | List filters, shared by the list and the exports |
+| `src/utils/report.ts` | Report data for exports: fixed ready times, time zone, filter summary |
+| `src/utils/csv.ts` | CSV export |
+| `src/utils/pdf.ts` | PDF export (jsPDF, loaded only when used) |
 | `src/utils/timers.ts` | Timer helpers: sorting, nearest timer, label suggestions |
 | `src/utils/decay.ts` | Calculates a decay group's timers from one material's reading |
 | `src/utils/groups.ts` | Group helpers: offline moment, default names, shifting, v2 -> v3 grouping |
@@ -90,6 +94,16 @@ Full times come from **Settings > Decay Times**. The defaults are official-serve
 - What's already been sent is stored per device under `ark-tracker:notify-state`, so reloads don't repeat alerts. New or resynced timers only alert going forward. Alerts missed while the app was closed arrive as one "While you were away" notification.
 - On iPhone and iPad, notifications only work from the Home Screen app (iOS 16.4+).
 - The service worker is `src/sw.ts` (vite-plugin-pwa `injectManifest`). It doesn't run under `npm run dev`; use `npm run build && npm run preview` to test anything that depends on it.
+
+## Exports
+
+**Settings > Data** has three exports:
+
+- **Export backup (JSON)**: everything, for moving to another device or keeping safe. The only format **Import backup** reads.
+- **Spreadsheet (CSV)**: one row per timer, plus one row per marker without timers. Opens in Excel, Google Sheets, or LibreOffice.
+- **Report (PDF)**: an A4 report grouped by map, soonest timers first, with coordinates and descriptions.
+
+CSV and PDF are snapshots, so timers are given as fixed ready dates and times rather than countdowns, with the exporting device's time zone spelled out (e.g. GMT+2, Africa/Johannesburg). Both follow the list's current filters, and the PDF states which filters were used. jsPDF is loaded only when a PDF is exported; its unused HTML/SVG helpers are left out of the offline cache (see `globIgnores` in `vite.config.ts`).
 
 ## Sharing between devices
 

@@ -463,6 +463,12 @@ fieldset {
   text-decoration: line-through;
 }
 
+.settings-subhead {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin: 1.25rem 0 0.25rem;
+}
+
 .timers-subhead {
   font-size: 0.85rem;
   color: var(--text-dim);

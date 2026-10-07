@@ -2,6 +2,10 @@ import { useState, type ChangeEvent } from 'react'
 import { DECAY_MATERIALS } from '../data/decay'
 import { migrate } from '../hooks/useAppData'
 import type { AppData, AppSettings, ArkMap, Category } from '../types'
+import { reportToCsv } from '../utils/csv'
+import { downloadBlob, exportBaseName } from '../utils/download'
+import { describeFilters, type Filters } from '../utils/filters'
+import { buildReport } from '../utils/report'
 import {
   getNotificationStatus,
   requestNotificationPermission,
@@ -22,6 +26,8 @@ const LEAD_OPTIONS = [
 
 type Props = {
   data: AppData
+  // The list's current filters, which reports follow
+  filters: Filters
   onSaveMap: (map: ArkMap) => void
   onDeleteMap: (id: string) => void
   onSaveCategory: (category: Category) => void
@@ -32,6 +38,7 @@ type Props = {
 
 export default function Settings({
   data,
+  filters,
   onSaveMap,
   onDeleteMap,
   onSaveCategory,
@@ -88,12 +95,27 @@ export default function Settings({
 
   function exportData() {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `ark-tracker-${new Date().toISOString().slice(0, 10)}.json`
-    link.click()
-    URL.revokeObjectURL(url)
+    downloadBlob(blob, `${exportBaseName(Date.now())}.json`)
+  }
+
+  function exportCsv() {
+    const now = Date.now()
+    const csv = reportToCsv(buildReport(data, filters, now))
+    downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `${exportBaseName(now)}.csv`)
+  }
+
+  const [buildingPdf, setBuildingPdf] = useState(false)
+  async function exportPdf() {
+    setBuildingPdf(true)
+    try {
+      const now = Date.now()
+      const { downloadReportPdf } = await import('../utils/pdf')
+      await downloadReportPdf(buildReport(data, filters, now), `${exportBaseName(now)}-report.pdf`)
+    } catch {
+      alert("Couldn't build the PDF. If you're offline, connect once so it can load, then try again.")
+    } finally {
+      setBuildingPdf(false)
+    }
   }
 
   async function importData(e: ChangeEvent<HTMLInputElement>) {
@@ -337,15 +359,27 @@ export default function Settings({
       <section>
         <h2>Data</h2>
         <p className="hint">
-          Everything is stored on this device only. Export to back up or to share with another
-          device. Importing replaces everything here.
+          Everything is stored on this device only. A backup copies everything to another device or
+          keeps it safe. Importing a backup replaces everything here.
         </p>
         <div className="actions">
-          <button onClick={exportData}>Export</button>
+          <button onClick={exportData}>Export backup</button>
           <label className="button">
-            Import
+            Import backup
             <input type="file" accept="application/json,.json" onChange={importData} hidden />
           </label>
+        </div>
+
+        <h3 className="settings-subhead">Reports</h3>
+        <p className="hint">
+          A snapshot to share or print: each timer's ready date and time, coordinates, and
+          descriptions. Reports follow the list's current filters ({describeFilters(filters, data.maps, data.categories)}).
+        </p>
+        <div className="actions">
+          <button onClick={exportCsv}>Spreadsheet (CSV)</button>
+          <button onClick={exportPdf} disabled={buildingPdf}>
+            {buildingPdf ? 'Building PDF...' : 'Report (PDF)'}
+          </button>
         </div>
       </section>
     </div>

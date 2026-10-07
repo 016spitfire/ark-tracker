@@ -1,17 +1,10 @@
 import { useState } from 'react'
 import type { ArkMap, Category, Marker, MarkerStatus, Timer } from '../types'
+import { filterMarkers, type Filters } from '../utils/filters'
 import { formatDateTime, formatRemaining } from '../utils/time'
 import { nextTimer, sortTimers, timerLabel } from '../utils/timers'
 import ResyncForm from './ResyncForm'
 import TimerDisclaimer from './TimerDisclaimer'
-
-export type Filters = {
-  mapId: string // 'all' or a map id
-  // Stores unchecked categories rather than checked ones, so new categories show by default
-  hiddenCategoryIds: string[]
-  search: string
-  showDone: boolean
-}
 
 type Props = {
   markers: Marker[]
@@ -44,21 +37,7 @@ export default function MarkerList({
   const categoryById = new Map(categories.map(c => [c.id, c]))
   const mapById = new Map(maps.map(m => [m.id, m]))
 
-  const query = filters.search.trim().toLowerCase()
-  const matchesSearch = (m: Marker) =>
-    query === '' ||
-    m.name.toLowerCase().includes(query) ||
-    m.description.toLowerCase().includes(query) ||
-    m.timers.some(t => t.label.toLowerCase().includes(query)) ||
-    m.groups.some(g => g.name.toLowerCase().includes(query))
-
-  const visible = markers.filter(
-    m =>
-      (filters.mapId === 'all' || m.mapId === filters.mapId) &&
-      !filters.hiddenCategoryIds.includes(m.categoryId) &&
-      (filters.showDone || m.status === 'active') &&
-      matchesSearch(m),
-  )
+  const visible = filterMarkers(markers, filters)
 
   function toggleCategory(id: string, checked: boolean) {
     const hiddenCategoryIds = checked

@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
 import MarkerForm from './components/MarkerForm'
-import MarkerList, { type Filters } from './components/MarkerList'
+import MarkerList from './components/MarkerList'
 import Settings from './components/Settings'
 import { useAppData } from './hooks/useAppData'
 import { useNow } from './hooks/useNow'
 import { useNotificationScheduler } from './hooks/useNotificationScheduler'
 import type { AppData, Marker } from './types'
+import type { Filters } from './utils/filters'
 
 export default function App() {
   const store = useAppData()
@@ -98,6 +99,7 @@ export default function App() {
             element={
               <Settings
                 data={data}
+                filters={filters}
                 onSaveMap={store.saveMap}
                 onDeleteMap={store.deleteMap}
                 onSaveCategory={store.saveCategory}

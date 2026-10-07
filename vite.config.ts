@@ -36,6 +36,9 @@ export default defineConfig({
       },
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,png,svg,ico}"],
+        // jsPDF's optional helpers for HTML and SVG rendering. The reports don't use them, so
+        // they're never loaded; keeping them out of the offline cache saves every user ~400 KB.
+        globIgnores: ["**/html2canvas*.js", "**/purify*.js", "**/index.es-*.js"],
       },
     }),
   ],
