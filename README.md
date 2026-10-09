@@ -33,7 +33,13 @@ npm run build     # type-check + production build
 | `src/utils/timers.ts` | Timer helpers: sorting, nearest timer, label suggestions |
 | `src/utils/decay.ts` | Calculates a decay group's timers from one material's reading |
 | `src/utils/groups.ts` | Group helpers: offline moment, default names, shifting, v2 -> v3 grouping |
-| `src/components/MarkerList.tsx` | Main screen: filters, Timers section, Points of Interest section |
+| `src/components/MarkerList.tsx` | Main screen: filters, layout switch, Timers and Points of Interest sections |
+| `src/components/MarkerCard.tsx` | Card layout for one marker |
+| `src/components/MarkerRow.tsx` | Compact list row for one marker (expands with More) |
+| `src/components/MarkerTable.tsx` | Sortable table layout |
+| `src/components/TimerRows.tsx` | Grouped timer rows and the resync panel, shared by cards and rows |
+| `src/utils/markerView.ts` | What a marker shows (next timer, ready, sections), shared by all layouts |
+| `src/hooks/useViewPrefs.ts` | Compact and layout preferences (per device) and the wide-screen check |
 | `src/components/MarkerForm.tsx` | Add/edit a marker |
 | `src/components/Settings.tsx` | Edit maps and categories, export/import JSON |
 | `src/components/ResyncForm.tsx` | Inline "time the game shows now" entry on timer cards |
@@ -85,6 +91,16 @@ Timers are organized into **decay groups**: one group per base, holding that bas
 - Upgrading to data version 3 turned each marker's material-named timers into group G1 with their times unchanged. A tame timer joined G1 only if its countdown lined up with the base's offline moment (within an hour); otherwise it stayed a one-off.
 
 Full times come from **Settings > Decay Times**. The defaults are official-server values from the [ARK wiki](https://ark.wiki.gg/wiki/Building). Private servers often scale decay, with separate multipliers for structures and tames. Enter them and press **Apply** to recalculate every row, then fix any single row that still doesn't match the game. To work out a server's structure multiplier, read two materials at one base: for example, `(metal time left - stone time left) / 4 days`, since official metal and stone are 4 days apart.
+
+## Layouts
+
+- Normal mode shows cards: one column on phones, as many as fit on wider screens. The list page uses up to 1200px; forms and Settings stay at 720px.
+- **Compact** (header button, on the list page) tightens the header, filters, and spacing. On phones it's always a list. From 700px wide, a **List / Cards / Table** switch appears.
+  - **List**: one row per marker; two lines below 1000px, one line above. Several timers collapse into the soonest one plus a count; **More** shows the description and every timer, grouped.
+  - **Cards**: smaller cards, more per row.
+  - **Table**: sortable columns (click a header: ascending, descending, back to the list's order). Click a row to open the marker.
+- Compact and layout are saved per device (`ark-tracker:view` in localStorage), not in the exported data, so a phone and a desktop keep their own. Compact defaults to on for screens 700px and wider.
+- The timer disclaimer on the list can be dismissed (per device). It always shows on the marker form for timer categories.
 
 ## Notifications
 

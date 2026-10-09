@@ -111,12 +111,14 @@ label.checkbox {
 /* Layout */
 
 .app {
-  max-width: 640px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 1rem 2rem;
 }
 
 header {
+  flex-wrap: wrap;
+  gap: 0.5rem;
   position: sticky;
   top: 0;
   z-index: 1;
@@ -168,6 +170,9 @@ section h2 {
 }
 
 .disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
   font-size: 0.8rem;
   color: var(--text-dim);
   background: var(--surface);
@@ -176,6 +181,35 @@ section h2 {
   border-radius: 8px;
   padding: 0.5rem 0.7rem;
   margin: 0 0 0.75rem;
+}
+
+.disclaimer p {
+  flex: 1;
+  margin: 0;
+}
+
+.disclaimer button {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0 0.25rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--text-dim);
+}
+
+/* Forms and Settings stay at a readable width while the list uses the full width */
+main.narrow {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* Toggle buttons (Compact, layout switch) */
+button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #15181c;
+  font-weight: 600;
 }
 
 .error {
@@ -222,6 +256,36 @@ footer a {
   flex: 1 1 100%;
 }
 
+.layout-switch {
+  display: flex;
+  margin-left: auto;
+}
+
+.layout-switch button {
+  border-radius: 0;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.layout-switch button:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.layout-switch button:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+.layout-switch button + button {
+  border-left: none;
+}
+
+@media (min-width: 700px) {
+  /* Search shares the row with the map filter instead of taking a line to itself */
+  .filters .search {
+    flex: 2 1 16rem;
+  }
+}
+
 .category-filters {
   display: flex;
   flex-wrap: wrap;
@@ -249,6 +313,14 @@ footer a {
 .marker-list ul {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Cards: one column on phones, as many as fit on wider screens */
+.marker-list .marker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
+  align-items: start;
   gap: 0.5rem;
 }
 
@@ -618,4 +690,317 @@ legend {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+/* Compact list rows */
+
+.marker-list .marker-rows {
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.marker-row {
+  background: var(--surface);
+  border-left: 4px solid var(--border);
+  padding: 0.4rem 0.6rem;
+}
+
+.marker-row + .marker-row {
+  border-top: 1px solid var(--border);
+}
+
+.marker-row.done {
+  opacity: 0.5;
+}
+
+/* Phones: two lines. Name and timer on top, details and buttons underneath. */
+.row-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name timer'
+    'meta actions';
+  align-items: center;
+  gap: 0.15rem 0.5rem;
+}
+
+.row-name {
+  grid-area: name;
+  justify-self: start;
+  max-width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  font-weight: 600;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-name:hover {
+  color: var(--accent);
+}
+
+.row-meta {
+  grid-area: meta;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.6rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  min-width: 0;
+}
+
+.row-desc {
+  grid-area: desc;
+  display: none;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-timer {
+  grid-area: timer;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.row-timer .timer {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.marker-row.ready .row-timer .timer {
+  color: var(--ready);
+  font-weight: 700;
+}
+
+.row-count {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.row-actions {
+  grid-area: actions;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.3rem;
+}
+
+.row-actions button {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.row-details {
+  margin-top: 0.4rem;
+}
+
+.row-details .description {
+  margin: 0 0 0.4rem;
+}
+
+.marker-row .resync-form {
+  margin-top: 0.4rem;
+}
+
+/* Desktop: everything on one line, with the description in the middle. Fixed and minmax(0, ...)
+   columns (never sized by content) keep every row on the same grid, so columns line up. */
+@media (min-width: 1000px) {
+  .row-line {
+    grid-template-columns: minmax(0, 1fr) 18rem minmax(0, 1.3fr) 9.5rem 12.5rem;
+    grid-template-areas: 'name meta desc timer actions';
+    gap: 0 0.75rem;
+  }
+
+  .row-meta {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .row-desc {
+    display: block;
+  }
+}
+
+/* Table */
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.marker-table {
+  width: 100%;
+  min-width: 56rem;
+  /* Fixed layout: column widths come from the header, not the contents, so the Timers and
+     Points of Interest tables line up and long descriptions can't push Done off screen */
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.marker-table th,
+.marker-table td {
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 1px solid var(--border);
+}
+
+.marker-table .col-name { width: 17%; }
+.marker-table .col-category { width: 12%; }
+.marker-table .col-map { width: 10%; }
+.marker-table .col-coords { width: 8.5%; }
+.marker-table .col-next { width: 15%; }
+.marker-table .col-ready { width: 12%; }
+.marker-table .col-timers { width: 5.5%; }
+.marker-table .col-actions { width: 5.5rem; }
+/* Description takes whatever is left */
+
+.marker-table th {
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.marker-table th button {
+  background: none;
+  border: none;
+  padding: 0;
+  font-weight: 600;
+  color: inherit;
+}
+
+.marker-table th button:hover {
+  color: var(--text);
+}
+
+.marker-table tbody tr {
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.marker-table tbody tr:hover {
+  background: var(--surface-2);
+}
+
+.marker-table tr.done {
+  opacity: 0.5;
+}
+
+.marker-table .cell-name {
+  font-weight: 600;
+  border-left: 4px solid var(--border);
+}
+
+.marker-table .timer {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.marker-table tr.ready .timer {
+  color: var(--ready);
+  font-weight: 700;
+}
+
+.marker-table .cell-desc {
+  color: var(--text-dim);
+}
+
+.marker-table td button {
+  font-size: 0.8rem;
+  padding: 0.15rem 0.5rem;
+}
+
+/* Compact mode: tighter header, filters, and spacing on the list page */
+
+.app.compact header {
+  padding: 0.5rem 0;
+}
+
+.app.compact header h1 {
+  font-size: 1.1rem;
+}
+
+.app.compact header nav button {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.app.compact .disclaimer {
+  font-size: 0.75rem;
+  padding: 0.3rem 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.app.compact .filters {
+  gap: 0.4rem;
+}
+
+.app.compact .filters input,
+.app.compact .filters select {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.app.compact .category-filters {
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+}
+
+.app.compact .category-chip,
+.app.compact .category-filters button {
+  padding: 0.1rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.app.compact section {
+  margin-top: 0.75rem;
+}
+
+.app.compact section h2 {
+  margin-bottom: 0.3rem;
+}
+
+.app.compact .marker-list .marker-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 0.4rem;
+}
+
+.app.compact .marker-card {
+  padding: 0.5rem 0.6rem;
+  font-size: 0.9rem;
+}
+
+.app.compact .marker-card .card-actions button {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+/* Expanded list rows: keep timer labels and times close enough to read across */
+.row-details .timer-rows,
+.marker-row .resync-form {
+  max-width: 34rem;
+}
+
+.app.compact .resync-form input {
+  padding: 0.3rem 0.5rem;
+}
+
+.app.compact .resync-form button {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
 }

@@ -1,10 +1,14 @@
 import { useState } from 'react'
-import type { ArkMap, Category, Marker, MarkerStatus, Timer } from '../types'
+import type { Layout } from '../hooks/useViewPrefs'
+import type { ArkMap, Category, Marker, MarkerStatus } from '../types'
 import { filterMarkers, type Filters } from '../utils/filters'
-import { formatDateTime, formatRemaining } from '../utils/time'
-import { nextTimer, sortTimers, timerLabel } from '../utils/timers'
-import ResyncForm from './ResyncForm'
+import { getMarkerInfo } from '../utils/markerView'
+import { nextTimer } from '../utils/timers'
+import MarkerCard from './MarkerCard'
+import MarkerRow from './MarkerRow'
+import MarkerTable from './MarkerTable'
 import TimerDisclaimer from './TimerDisclaimer'
+import type { TimerActions } from './TimerRows'
 
 type Props = {
   markers: Marker[]
@@ -13,11 +17,22 @@ type Props = {
   filters: Filters
   onFiltersChange: (filters: Filters) => void
   now: number
+  compact: boolean
+  // Tablet or desktop: compact mode can pick a layout. Phones always get the list.
+  wide: boolean
+  layout: Layout
+  onLayoutChange: (layout: Layout) => void
   onEdit: (id: string) => void
   onToggleDone: (marker: Marker) => void
   onResyncTimer: (markerId: string, timerId: string, durationMs: number) => void
   onSetTimerStatus: (markerId: string, timerId: string, status: MarkerStatus) => void
 }
+
+const LAYOUTS: { value: Layout; label: string }[] = [
+  { value: 'list', label: 'List' },
+  { value: 'cards', label: 'Cards' },
+  { value: 'table', label: 'Table' },
+]
 
 export default function MarkerList({
   markers,
@@ -26,16 +41,27 @@ export default function MarkerList({
   filters,
   onFiltersChange,
   now,
+  compact,
+  wide,
+  layout,
+  onLayoutChange,
   onEdit,
   onToggleDone,
   onResyncTimer,
   onSetTimerStatus,
 }: Props) {
-  // The timer whose resync row is open. Only one at a time across the whole list.
+  // The timer whose resync panel is open. Only one at a time across the whole list.
   const [openTimerId, setOpenTimerId] = useState<string | null>(null)
+  // List rows showing their details
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   const categoryById = new Map(categories.map(c => [c.id, c]))
   const mapById = new Map(maps.map(m => [m.id, m]))
+  const showMap = filters.mapId === 'all'
+  const actions: TimerActions = { openTimerId, setOpenTimerId, onResyncTimer, onSetTimerStatus }
+
+  // Normal mode is always cards. Compact mode is the chosen layout, or the list on phones.
+  const effectiveLayout: Layout = !compact ? 'cards' : wide ? layout : 'list'
 
   const visible = filterMarkers(markers, filters)
 
@@ -46,158 +72,78 @@ export default function MarkerList({
     onFiltersChange({ ...filters, hiddenCategoryIds })
   }
 
+  function toggleExpanded(id: string) {
+    setExpandedIds(ids => {
+      const next = new Set(ids)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   const isTimed = (m: Marker) =>
     m.timers.length > 0 && (categoryById.get(m.categoryId)?.hasTimer ?? false)
 
-  // Sorts by the card's nearest active timer. Cards with every timer done go last.
+  // Sorts by the marker's nearest active timer. Markers with every timer done go last.
   const sortKey = (m: Marker) => nextTimer(m)?.expiresAt ?? Infinity
 
   // Timers: soonest first, so ready ones float to the top. Points of interest: alphabetical.
   const timed = visible.filter(isTimed).sort((a, b) => sortKey(a) - sortKey(b))
   const pois = visible.filter(m => !isTimed(m)).sort((a, b) => a.name.localeCompare(b.name))
 
-  // Resync row for one timer, with a done/reopen toggle when the card has several timers
-  function renderTimerPanel(marker: Marker, timer: Timer, withDoneToggle: boolean) {
-    const group = marker.groups.find(g => g.id === timer.groupId)
+  function renderSection(title: string, sectionMarkers: Marker[]) {
+    if (sectionMarkers.length === 0) return null
+    const rows = sectionMarkers.map(marker => ({
+      marker,
+      info: getMarkerInfo(marker, categoryById, mapById, filters.showDone, now),
+    }))
     return (
-      <ResyncForm
-        note={
-          group
-            ? `Enter the time the game shows now. Every timer in ${group.name} moves with it.`
-            : undefined
-        }
-        onSave={durationMs => {
-          onResyncTimer(marker.id, timer.id, durationMs)
-          setOpenTimerId(null)
-        }}
-        onCancel={() => setOpenTimerId(null)}
-      >
-        {withDoneToggle && (
-          <button
-            type="button"
-            onClick={() => {
-              onSetTimerStatus(marker.id, timer.id, timer.status === 'done' ? 'active' : 'done')
-              setOpenTimerId(null)
-            }}
-          >
-            {timer.status === 'done' ? 'Reopen timer' : 'Mark timer done'}
-          </button>
+      <section>
+        <h2>{title}</h2>
+        {effectiveLayout === 'table' && (
+          <MarkerTable rows={rows} showMap={showMap} onEdit={onEdit} onToggleDone={onToggleDone} />
         )}
-      </ResyncForm>
-    )
-  }
-
-  function renderCard(marker: Marker) {
-    const category = categoryById.get(marker.categoryId)
-    const map = mapById.get(marker.mapId)
-    const timed = isTimed(marker)
-    const next = timed ? nextTimer(marker) : undefined
-    const remaining = next ? next.expiresAt - now : null
-    const ready = remaining !== null && remaining <= 0
-    const editable = timed && marker.status === 'active'
-
-    // Done timers follow the same "Show done" toggle as done cards
-    const shownTimers = sortTimers(
-      marker.timers.filter(t => filters.showDone || t.status === 'active'),
-    )
-    // A single active timer keeps the simple card. Anything more gets a row per timer.
-    const showTimerRows = timed && (shownTimers.length > 1 || shownTimers.some(t => t.status === 'done'))
-    // Each group gets its own section, then one-offs under "Other". Headers only show when
-    // there's more than one section.
-    const groupIds = new Set(marker.groups.map(g => g.id))
-    const timerSections = [
-      ...marker.groups.map(g => ({
-        key: g.id,
-        name: g.name,
-        timers: shownTimers.filter(t => t.groupId === g.id),
-      })),
-      {
-        key: 'other',
-        name: 'Other',
-        timers: shownTimers.filter(t => !t.groupId || !groupIds.has(t.groupId)),
-      },
-    ].filter(section => section.timers.length > 0)
-    const openTimer = marker.timers.find(t => t.id === openTimerId)
-
-    return (
-      <li
-        key={marker.id}
-        className={`marker-card${marker.status === 'done' ? ' done' : ''}${ready ? ' ready' : ''}`}
-        style={{ borderLeftColor: category?.color }}
-      >
-        <div className="card-row">
-          <div className="card-main" onClick={() => onEdit(marker.id)}>
-            <div className="name">{marker.name}</div>
-            <div className="card-meta">
-              <span style={{ color: category?.color }}>{category?.name ?? 'Unknown category'}</span>
-              {filters.mapId === 'all' && <span>{map?.name ?? 'Unknown map'}</span>}
-              <span className="coords">{marker.lat}, {marker.lon}</span>
-            </div>
-            {timed && (
-              <div className="card-meta">
-                {next
-                  ? `${ready ? 'Ready since' : 'Ready at'} ${formatDateTime(next.expiresAt)}`
-                  : 'All timers done'}
-              </div>
-            )}
-            {marker.description && <p className="description">{marker.description}</p>}
-          </div>
-          {/* Timer pinned top, buttons pinned bottom, beside the content instead of below it */}
-          <div className="card-side">
-            {remaining !== null && (
-              <span className="timer">{ready ? 'READY' : formatRemaining(remaining)}</span>
-            )}
-            {/* Done stays rightmost so it's in the same spot on every card */}
-            <div className="card-actions">
-              {editable && !showTimerRows && next && openTimerId !== next.id && (
-                <button onClick={() => setOpenTimerId(next.id)}>Resync</button>
-              )}
-              <button onClick={() => onToggleDone(marker)}>
-                {marker.status === 'done' ? 'Reopen' : 'Done'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {showTimerRows && (
-          <div className="timer-rows">
-            {timerSections.map(section => (
-              <div key={section.key}>
-                {timerSections.length > 1 && <div className="timer-section-name">{section.name}</div>}
-                <ul>
-                  {section.timers.map(timer => {
-                    const timerRemaining = timer.expiresAt - now
-                    const timerReady = timer.status === 'active' && timerRemaining <= 0
-                    return (
-                      <li key={timer.id}>
-                        <button
-                          className={`timer-row${timer.status === 'done' ? ' done' : ''}${timerReady ? ' ready' : ''}`}
-                          disabled={!editable}
-                          onClick={() => setOpenTimerId(openTimerId === timer.id ? null : timer.id)}
-                        >
-                          <span>{timerLabel(timer)}</span>
-                          <span className="timer">
-                            {timer.status === 'done' ? 'done' : timerReady ? 'READY' : formatRemaining(timerRemaining)}
-                          </span>
-                        </button>
-                        {editable && openTimerId === timer.id && renderTimerPanel(marker, timer, true)}
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
+        {effectiveLayout === 'list' && (
+          <ul className="marker-rows">
+            {rows.map(({ marker, info }) => (
+              <MarkerRow
+                key={marker.id}
+                marker={marker}
+                info={info}
+                now={now}
+                showMap={showMap}
+                expanded={expandedIds.has(marker.id)}
+                onToggleExpanded={() => toggleExpanded(marker.id)}
+                onEdit={onEdit}
+                onToggleDone={onToggleDone}
+                actions={actions}
+              />
             ))}
-          </div>
+          </ul>
         )}
-
-        {editable && !showTimerRows && openTimer && renderTimerPanel(marker, openTimer, false)}
-      </li>
+        {effectiveLayout === 'cards' && (
+          <ul className="marker-grid">
+            {rows.map(({ marker, info }) => (
+              <MarkerCard
+                key={marker.id}
+                marker={marker}
+                info={info}
+                now={now}
+                showMap={showMap}
+                onEdit={onEdit}
+                onToggleDone={onToggleDone}
+                actions={actions}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
     )
   }
 
   return (
-    <div className="marker-list">
-      <TimerDisclaimer />
+    <div className={`marker-list layout-${effectiveLayout}${compact ? ' compact' : ''}`}>
+      <TimerDisclaimer dismissible />
 
       <div className="filters">
         <input
@@ -224,6 +170,20 @@ export default function MarkerList({
           />
           Show done
         </label>
+        {compact && wide && (
+          <div className="layout-switch" role="group" aria-label="Layout">
+            {LAYOUTS.map(l => (
+              <button
+                key={l.value}
+                type="button"
+                aria-pressed={layout === l.value}
+                onClick={() => onLayoutChange(l.value)}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="category-filters">
@@ -251,19 +211,8 @@ export default function MarkerList({
         </p>
       )}
 
-      {timed.length > 0 && (
-        <section>
-          <h2>Timers</h2>
-          <ul>{timed.map(renderCard)}</ul>
-        </section>
-      )}
-
-      {pois.length > 0 && (
-        <section>
-          <h2>Points of Interest</h2>
-          <ul>{pois.map(renderCard)}</ul>
-        </section>
-      )}
+      {renderSection('Timers', timed)}
+      {renderSection('Points of Interest', pois)}
     </div>
   )
 }

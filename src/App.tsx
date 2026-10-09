@@ -6,6 +6,7 @@ import Settings from './components/Settings'
 import { useAppData } from './hooks/useAppData'
 import { useNow } from './hooks/useNow'
 import { useNotificationScheduler } from './hooks/useNotificationScheduler'
+import { useMediaQuery, useViewPrefs, WIDE_QUERY } from './hooks/useViewPrefs'
 import type { AppData, Marker } from './types'
 import type { Filters } from './utils/filters'
 
@@ -16,6 +17,8 @@ export default function App() {
   useNotificationScheduler(data)
   const navigate = useNavigate()
   const location = useLocation()
+  const [viewPrefs, setViewPrefs] = useViewPrefs()
+  const wide = useMediaQuery(WIDE_QUERY)
 
   // Lives here (not in MarkerList) so filters survive switching pages
   const [filters, setFilters] = useState<Filters>({
@@ -32,12 +35,19 @@ export default function App() {
   const isList = location.pathname === '/'
 
   return (
-    <div className="app">
+    // Compact tightens the list page's header and filters too; forms and Settings stay as they are
+    <div className={`app${isList && viewPrefs.compact ? ' compact' : ''}`}>
       <header>
         <h1 onClick={() => navigate('/')}>ARK Tracker</h1>
         {isList ? (
           <nav>
             <button className="primary" onClick={() => navigate('/markers/new')}>+ Add</button>
+            <button
+              aria-pressed={viewPrefs.compact}
+              onClick={() => setViewPrefs(p => ({ ...p, compact: !p.compact }))}
+            >
+              Compact
+            </button>
             <button onClick={() => navigate('/settings')}>Settings</button>
           </nav>
         ) : (
@@ -47,7 +57,8 @@ export default function App() {
         )}
       </header>
 
-      <main>
+      {/* The list uses the full width; forms and Settings stay at a readable width */}
+      <main className={isList ? undefined : 'narrow'}>
         <Routes>
           <Route
             path="/"
@@ -59,6 +70,10 @@ export default function App() {
                 filters={filters}
                 onFiltersChange={setFilters}
                 now={now}
+                compact={viewPrefs.compact}
+                wide={wide}
+                layout={viewPrefs.layout}
+                onLayoutChange={layout => setViewPrefs(p => ({ ...p, layout }))}
                 onEdit={id => navigate(`/markers/${id}/edit`)}
                 onToggleDone={m => store.setMarkerStatus(m.id, m.status === 'done' ? 'active' : 'done')}
                 onResyncTimer={(markerId, timerId, durationMs) =>
