@@ -931,8 +931,23 @@ legend {
 
 /* Normal (not compact) list rows and table: the same layouts with more breathing room */
 
+/* Separate rows with gaps, like the cards, instead of one joined block */
+.app:not(.compact) .marker-list .marker-rows {
+  gap: 0.5rem;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+}
+
 .app:not(.compact) .marker-row {
   padding: 0.65rem 0.8rem;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  border-radius: 8px;
+}
+
+.app:not(.compact) .marker-row + .marker-row {
+  border-top: 1px solid var(--border);
 }
 
 .app:not(.compact) .row-meta {
