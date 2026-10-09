@@ -19,7 +19,7 @@ type Props = {
   onFiltersChange: (filters: Filters) => void
   now: number
   compact: boolean
-  // Tablet or desktop: compact mode can pick a layout. Phones always get the list.
+  // Tablet or desktop: any layout can be picked. Phones get cards, or the list when compact.
   wide: boolean
   layout: Layout
   onLayoutChange: (layout: Layout) => void
@@ -61,8 +61,9 @@ export default function MarkerList({
   const showMap = filters.mapId === 'all'
   const actions: TimerActions = { openTimerId, setOpenTimerId, onResyncTimer, onSetTimerStatus }
 
-  // Normal mode is always cards. Compact mode is the chosen layout, or the list on phones.
-  const effectiveLayout: Layout = !compact ? 'cards' : wide ? layout : 'list'
+  // Wide screens use the chosen layout in either mode; compact only changes the spacing.
+  // Phones: cards normally, the list when compact.
+  const effectiveLayout: Layout = wide ? layout : compact ? 'list' : 'cards'
 
   const visible = filterMarkers(markers, filters)
 
@@ -171,7 +172,7 @@ export default function MarkerList({
           />
           Show done
         </label>
-        {compact && wide && (
+        {wide && (
           <div className="layout-switch" role="group" aria-label="Layout">
             {LAYOUTS.map(l => (
               <button

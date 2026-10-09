@@ -96,11 +96,12 @@ Full times come from **Settings > Decay Times**. The defaults are official-serve
 ## Layouts
 
 - Normal mode shows cards: one column on phones, as many as fit on wider screens, tiled Pinterest-style so short cards don't leave gaps. The grid has 4px rows and each card spans as many as its height needs (measured, and re-measured with a ResizeObserver), which keeps the sorted order reading left to right. The list page uses up to 1200px; forms and Settings stay at 720px.
-- **Compact** (header button, on the list page) tightens the header, filters, and spacing. On phones it's always a list. From 700px wide, a **List / Cards / Table** switch appears.
+- From 700px wide, a **List / Cards / Table** switch appears next to the filters, in either mode. On phones, normal mode shows cards and compact shows the list.
+- **Compact** (header button, on the list page) tightens the header, filters, and spacing of whichever layout is showing.
   - **List**: one row per marker; two lines below 1000px, one line above. Several timers collapse into the soonest one plus a count; **More** shows the description and every timer, grouped.
   - **Cards**: smaller cards, more per row.
   - **Table**: sortable columns (click a header: ascending, descending, back to the list's order). Click a row to open the marker.
-- Compact and layout are saved per device (`ark-tracker:view` in localStorage), not in the exported data, so a phone and a desktop keep their own. Compact defaults to on for screens 700px and wider.
+- Compact and layout are saved per device (one layout choice shared by both modes) (`ark-tracker:view` in localStorage), not in the exported data, so a phone and a desktop keep their own. Compact defaults to on for screens 700px and wider.
 - The timer disclaimer on the list can be dismissed (per device). It always shows on the marker form for timer categories.
 
 ## Notifications

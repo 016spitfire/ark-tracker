@@ -868,9 +868,9 @@ legend {
 .marker-table .col-category { width: 12%; }
 .marker-table .col-map { width: 10%; }
 .marker-table .col-coords { width: 8.5%; }
-.marker-table .col-next { width: 15%; }
+.marker-table .col-next { width: 14%; }
 .marker-table .col-ready { width: 12%; }
-.marker-table .col-timers { width: 5.5%; }
+.marker-table .col-timers { width: 7%; }
 .marker-table .col-actions { width: 5.5rem; }
 /* Description takes whatever is left */
 
@@ -927,6 +927,35 @@ legend {
 .marker-table td button {
   font-size: 0.8rem;
   padding: 0.15rem 0.5rem;
+}
+
+/* Normal (not compact) list rows and table: the same layouts with more breathing room */
+
+.app:not(.compact) .marker-row {
+  padding: 0.65rem 0.8rem;
+}
+
+.app:not(.compact) .row-meta {
+  font-size: 0.85rem;
+}
+
+.app:not(.compact) .row-actions button {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.65rem;
+}
+
+.app:not(.compact) .marker-table {
+  font-size: 0.9rem;
+}
+
+.app:not(.compact) .marker-table th,
+.app:not(.compact) .marker-table td {
+  padding: 0.6rem 0.75rem;
+}
+
+.app:not(.compact) .marker-table td button {
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
 }
 
 /* Compact mode: tighter header, filters, and spacing on the list page */
