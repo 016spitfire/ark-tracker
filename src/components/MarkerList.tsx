@@ -7,6 +7,7 @@ import { nextTimer } from '../utils/timers'
 import MarkerCard from './MarkerCard'
 import MarkerRow from './MarkerRow'
 import MarkerTable from './MarkerTable'
+import MasonryGrid from './MasonryGrid'
 import TimerDisclaimer from './TimerDisclaimer'
 import type { TimerActions } from './TimerRows'
 
@@ -122,7 +123,7 @@ export default function MarkerList({
           </ul>
         )}
         {effectiveLayout === 'cards' && (
-          <ul className="marker-grid">
+          <MasonryGrid gap={compact ? 6 : 8}>
             {rows.map(({ marker, info }) => (
               <MarkerCard
                 key={marker.id}
@@ -135,7 +136,7 @@ export default function MarkerList({
                 actions={actions}
               />
             ))}
-          </ul>
+          </MasonryGrid>
         )}
       </section>
     )

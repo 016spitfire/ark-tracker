@@ -320,8 +320,12 @@ footer a {
 .marker-list .marker-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
+  /* Masonry: tiny rows that each card spans as many of as it needs (see useMasonry).
+     Must match ROW_UNIT there. Vertical spacing is built into each card's span, so no row gap;
+     the column gap is set inline to match. */
+  grid-auto-rows: 4px;
+  row-gap: 0;
   align-items: start;
-  gap: 0.5rem;
 }
 
 .marker-card {
@@ -977,7 +981,6 @@ legend {
 
 .app.compact .marker-list .marker-grid {
   grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
-  gap: 0.4rem;
 }
 
 .app.compact .marker-card {
